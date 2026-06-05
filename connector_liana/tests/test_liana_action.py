@@ -76,7 +76,6 @@ class TestLianaServerAction(TransactionCase):
             "email": "lover@example.test",
             "phone": "+358111222",
             "liana_extra1": "EXT-1",
-            "liana_token": "TKN-1",
         })
 
         events = self.env["liana.event"].search([("res_id", "=", partner.id)])
@@ -92,7 +91,6 @@ class TestLianaServerAction(TransactionCase):
         self.assertEqual(data["identity"]["email"], "lover@example.test")
         self.assertEqual(data["identity"]["sms"], "+358111222")
         self.assertEqual(data["identity"]["extra1"], "EXT-1")
-        self.assertEqual(data["identity"]["token"], "TKN-1")
         self.assertEqual(data["events"][0]["verb"], "subscribe")
         self.assertEqual(data["events"][0]["items"]["name"], "Liana Lover")
         self.assertEqual(data["events"][0]["items"]["email"], "lover@example.test")

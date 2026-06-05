@@ -26,6 +26,8 @@
                                options="{'no_create': True, 'no_open': True}"
                                context="{'hide_model': 1}"
                                placeholder="Pick a partner/lead field..."/>
+                        <field name="liana_allow_identity_update"/>
+                        <field name="liana_send_extra1"/>
                     </group>
                     <group>
                         <label for="liana_sample_payload"/>

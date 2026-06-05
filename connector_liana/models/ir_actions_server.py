@@ -36,8 +36,19 @@ class IrActionsServer(models.Model):
     )
     liana_no_duplicates = fields.Boolean(
         string="No Duplicates",
-        default=False,
+        default=True,
         help="When enabled, Liana Automation will ignore duplicate events.",
+    )
+    liana_allow_identity_update = fields.Boolean(
+        string="Allow Identity Update",
+        default=True,
+        help="Allow sending changes to the identity data",
+    )
+    liana_send_extra1 = fields.Boolean(
+        string="Send Extra1",
+        default=True,
+        help="When enable, identifying key 'Extra1' is send to allow Liana to keep track of "
+             "identities when other data such as email address is changed."
     )
     liana_identity_field_id = fields.Many2one(
         comodel_name="ir.model.fields",
@@ -186,6 +197,8 @@ class IrActionsServer(models.Model):
         "liana_event_item_ids.field_id",
         "liana_event_item_ids.subfield_id",
         "liana_identity_field_id",
+        "liana_allow_identity_update",
+        "liana_send_extra1",
     )
     def _compute_liana_sample_payload(self):
         for action in self:
@@ -252,9 +265,8 @@ class IrActionsServer(models.Model):
             identity["sms"] = sms
         if not identity_record.liana_extra1:
             identity_record.liana_extra1 = self.env["ir.sequence"].next_by_code("liana.extra1")
-        identity["extra1"] = identity_record.liana_extra1
-        if identity_record.liana_token:
-            identity["token"] = identity_record.liana_token
+        if self.liana_send_extra1:
+            identity["extra1"] = identity_record.liana_extra1
         return identity
 
     def _build_event_items(self, record):
@@ -300,6 +312,7 @@ class IrActionsServer(models.Model):
         return {
             "channel": str(self.liana_channel_id.channel_id) or "",
             "no_duplicates": bool(self.liana_no_duplicates),
+            "allow_identity_update": bool(self.liana_allow_identity_update),
             "data": [
                 {
                     "identity": identity,

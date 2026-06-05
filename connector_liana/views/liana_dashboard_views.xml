@@ -70,7 +70,7 @@
     <record id="action_liana_dashboard" model="ir.actions.act_window">
         <field name="name">Dashboard</field>
         <field name="res_model">liana.event.report</field>
-        <field name="view_mode">graph,pivot</field>
+        <field name="view_mode">pivot,graph</field>
         <field name="search_view_id" ref="view_liana_event_report_search"/>
         <field name="context">{
             'search_default_filter_last_12m': 1,

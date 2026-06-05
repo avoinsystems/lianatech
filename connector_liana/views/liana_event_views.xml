@@ -15,6 +15,7 @@
                 <field name="backend_id"/>
                 <field name="res_model"/>
                 <field name="res_id"/>
+                <field name="create_date"/>
             </list>
         </field>
     </record>

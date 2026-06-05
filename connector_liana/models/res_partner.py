@@ -10,9 +10,3 @@ class ResPartner(models.Model):
         readonly=True,
     )
 
-    liana_token = fields.Char(
-        string="Liana Token",
-        copy=False,
-        help="Cookie identifier sent to Liana Automation as 'token'.",
-        readonly=True,
-    )
