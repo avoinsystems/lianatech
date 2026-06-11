@@ -14,10 +14,10 @@
                     </div>
                     <group>
                         <group string="Liana Automation Configuration">
+                            <field name="liana_automation_address"/>
                             <field name="liana_automation_realm"/>
                             <field name="liana_automation_user"/>
                             <field name="liana_automation_secret" password="True"/>
-                            <field name="liana_automation_address"/>
                             <button
                                     name="test_automation_connection"
                                     type="object"
