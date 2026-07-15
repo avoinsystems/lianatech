@@ -9,12 +9,27 @@ import datetime
 
 # --- General variables ---
 BASE_PATH    = 'rest'
+# Base path segment for the LianaMailer REST API. Unlike Automation (``rest``)
+# the Mailer API is served under ``/api`` and V1 request bodies are positional
+# JSON arrays rather than objects.
+MAILER_BASE_PATH = 'api'
 CONTENT_TYPE = 'application/json'
 METHOD       = 'POST'
 # POST body: Liana Automation event/tracking payload (channel, no_duplicates, data, ...).
 AUTOMATION_API_EVENT_PATH = "v1/import"
 # POST body: empty object. Returns list of channels available on the account.
 AUTOMATION_API_CHANNEL_LIST_PATH = "v1/channel/list"
+# POST body: empty array. Returns the account's customer properties (field catalog).
+MAILER_API_PROPERTIES_PATH = "v1/getCustomerProperties"
+
+# Property handles reserved by LianaMailer; they must not be sent as custom
+# properties in import payloads (see the API "Restrictions" documentation).
+MAILER_RESERVED_PROPERTY_NAMES = frozenset({
+    "admin", "archive", "delivery_id", "email", "id", "ip", "list_id",
+    "list_name", "mail_id", "origin", "reason", "recipient_email",
+    "recipient_sms", "scheduled", "sms", "subject", "tracking_id", "url",
+    "useragent",
+})
 
 # XML ids of the default Liana server actions shipped in
 # ``data/default_automations.xml``. Used by
@@ -53,60 +68,86 @@ class LianaBackend(models.Model):
         string="Automation Realm",
     )
 
+    liana_mailer_address = fields.Char(
+        string="Mailer Address",
+        help="Base URL of the LianaMailer REST API, e.g. https://rest.lianamailer.com",
+    )
+
+    liana_mailer_secret = fields.Char(
+        string="Mailer Secret",
+        copy=False,
+    )
+
+    liana_mailer_user = fields.Char(
+        string="Mailer User",
+        copy=False,
+    )
+
+    liana_mailer_realm = fields.Char(
+        string="Mailer Realm",
+    )
+
+    property_ids = fields.One2many(
+        comodel_name="liana.property",
+        inverse_name="backend_id",
+        string="Liana Properties",
+    )
+
+    mapping_ids = fields.One2many(
+        comodel_name="liana.field.mapping",
+        inverse_name="backend_id",
+        string="Field Mappings",
+    )
+
     liana_channel_id = fields.Many2one(
         comodel_name="liana.channel",
         string="Default Liana Channel",
         domain="[('backend_id', '=', id), ('system_name', 'not in', ('system', 'esp'))]",
     )
 
-    def automation_send_api_request(self, path, data):
-        """
-        Sends an authenticated API request to Liana Automation.
+    def _send_signed_request(self, base_path, path, data, address, secret, user, realm):
+        """Send an HMAC-signed POST to a Liana REST API and return the JSON body.
+
+        The signing scheme (SHA256 HMAC over method/md5/content-type/date/body/
+        path) is shared by both the Automation and Mailer APIs; only the base
+        path segment, credentials and body encoding differ.
         """
         self.ensure_one()
 
-        # 1. Prepare Data
         json_data = json.dumps(data)
 
-        # 2. Get Current Date (ISO 8601)
-        # PHP' 'c' format is roughly equivalent to isoformat()
-        date_str = datetime.datetime.now().astimezone().isoformat(timespec='seconds')  #
+        # ISO 8601 date; PHP's 'c' format is roughly equivalent to isoformat().
+        date_str = datetime.datetime.now().astimezone().isoformat(timespec='seconds')
 
-        # 3. MD5 Hash of the body
         content_md5 = hashlib.md5(json_data.encode('utf-8')).hexdigest()
 
-        # 4. Create Signature Content
-        # Order: Method, MD5, Content-Type, Date, Data, Full Path
-        full_api_path = f"/{BASE_PATH}/{path}"
+        # Signature content order: Method, MD5, Content-Type, Date, Body, Path.
+        full_api_path = f"/{base_path}/{path}"
         signature_payload = "\n".join([
             METHOD,
             content_md5,
             CONTENT_TYPE,
             date_str,
             json_data,
-            full_api_path
+            full_api_path,
         ])
 
-        # 5. Generate HMAC SHA256 Signature
         signature = hmac.new(
-            self.liana_automation_secret.encode('utf-8'),
+            (secret or "").encode('utf-8'),
             signature_payload.encode('utf-8'),
-            hashlib.sha256
+            hashlib.sha256,
         ).hexdigest()
 
-        # 6. Create Authorization Header
-        auth_header = f"{self.liana_automation_realm} {self.liana_automation_user}:{signature}"
+        auth_header = f"{realm} {user}:{signature}"
 
-        # 7. Setup Headers
         headers = {
             "Authorization": auth_header,
             "Date": date_str,
             "Content-MD5": content_md5,
-            "Content-Type": CONTENT_TYPE
+            "Content-Type": CONTENT_TYPE,
         }
 
-        # 8. Send Request
-        full_url = f"{self.liana_automation_address}/{BASE_PATH}/{path}"
+        full_url = f"{address}/{base_path}/{path}"
 
         try:
             response = requests.post(full_url, data=json_data, headers=headers)
@@ -114,6 +155,35 @@ class LianaBackend(models.Model):
             return response.json()
         except requests.exceptions.RequestException as e:
             raise LianaError(f"API request failed: {str(e)}")
+
+    def automation_send_api_request(self, path, data):
+        """Sends an authenticated API request to Liana Automation."""
+        return self._send_signed_request(
+            BASE_PATH,
+            path,
+            data,
+            self.liana_automation_address,
+            self.liana_automation_secret,
+            self.liana_automation_user,
+            self.liana_automation_realm,
+        )
+
+    def mailer_send_api_request(self, path, params):
+        """Send an authenticated request to the LianaMailer REST API.
+
+        ``params`` must be a list (V1 endpoints identify parameters positionally,
+        so the request body is a JSON array). Pass an empty list for endpoints
+        that take no parameters.
+        """
+        return self._send_signed_request(
+            MAILER_BASE_PATH,
+            path,
+            params,
+            self.liana_mailer_address,
+            self.liana_mailer_secret,
+            self.liana_mailer_user,
+            self.liana_mailer_realm,
+        )
 
     def _check_automation_settings(self):
         if any((
@@ -123,6 +193,74 @@ class LianaBackend(models.Model):
             not self.liana_automation_realm,
         )):
             raise UserError("Please fill in all Liana Automation settings to test the connection.")
+
+    def _check_mailer_settings(self):
+        if any((
+            not self.liana_mailer_address,
+            not self.liana_mailer_secret,
+            not self.liana_mailer_user,
+            not self.liana_mailer_realm,
+        )):
+            raise UserError(_("Please fill in all Liana Mailer settings first."))
+
+    def test_mailer_connection(self):
+        """Test connection to the LianaMailer API using the ``echoMessage`` endpoint."""
+        self.ensure_one()
+        self._check_mailer_settings()
+
+        response = self.mailer_send_api_request("v1/echoMessage", ["hello"])
+        if isinstance(response, dict) and response.get("result") == "hello":
+            return {
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "title": _("Success"),
+                    "message": _("Liana Mailer connection successful!"),
+                    "type": "success",
+                    "sticky": False,
+                },
+            }
+        raise LianaError(f"Unexpected response from Liana Mailer: {response!r}")
+
+    def fetch_properties(self):
+        """Call ``getCustomerProperties`` and upsert results into ``liana.property``.
+
+        Returns the recordset of properties present for this backend after sync.
+        """
+        self.ensure_one()
+        self._check_mailer_settings()
+
+        response = self.mailer_send_api_request(MAILER_API_PROPERTIES_PATH, [])
+        # Successful responses wrap the payload in a ``result`` list.
+        if not isinstance(response, dict) or "result" not in response:
+            raise LianaError(
+                f"Unexpected response from Liana Mailer getCustomerProperties: {response!r}"
+            )
+        items = response.get("result")
+        if not isinstance(items, list):
+            raise LianaError(
+                f"Unexpected response from Liana Mailer getCustomerProperties: {response!r}"
+            )
+        return self.env["liana.property"].sudo()._update_from_api(self, items)
+
+    def action_fetch_liana_properties(self):
+        """Refresh ``liana.property`` from the LianaMailer ``getCustomerProperties`` endpoint."""
+        self.ensure_one()
+        try:
+            properties = self.fetch_properties()
+        except LianaError as err:
+            raise UserError(str(err)) from err
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": _("Liana Properties"),
+                "message": _("Fetched %s propert(y/ies) from Liana Mailer.") % len(properties),
+                "type": "success",
+                "sticky": False,
+                "next": {"type": "ir.actions.client", "tag": "reload"},
+            },
+        }
 
     def action_fetch_liana_channels(self):
         """Refresh `liana.channel` from the Liana Automation `channel/list` endpoint."""
@@ -139,6 +277,7 @@ class LianaBackend(models.Model):
                 "message": _("Fetched %s channel(s) from Liana Automation.") % len(channels),
                 "type": "success",
                 "sticky": False,
+                "next": {"type": "ir.actions.client", "tag": "reload"},
             },
         }
 
@@ -244,6 +383,30 @@ class LianaBackend(models.Model):
                 "sticky": False,
             },
         }
+
+    def _build_recipient_values(self, contact):
+        """Build the LianaMailer recipient dict for a ``mailing.contact``.
+
+        ``email`` is always taken from the contact; the configured field
+        mappings add custom property values keyed by their Liana property name.
+        Reserved property names are skipped defensively.
+        """
+        self.ensure_one()
+        values = {"email": contact.email}
+        for mapping in self.mapping_ids:
+            property_name = mapping.liana_property_id.name
+            field_name = mapping.contact_field_id.name
+            if not property_name or not field_name:
+                continue
+            if property_name in MAILER_RESERVED_PROPERTY_NAMES:
+                continue
+            raw = contact[field_name]
+            if raw is False or raw is None:
+                raw = ""
+            elif not isinstance(raw, (str, int, float)):
+                raw = str(raw)
+            values[property_name] = raw
+        return values
 
     @api.model
     def _get_default_backend(self):

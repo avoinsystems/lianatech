@@ -12,8 +12,8 @@
                             <field name="name" placeholder="Backend Name"/>
                         </h1>
                     </div>
-                    <group>
-                        <group string="Liana Automation Configuration">
+                    <group string="Liana Automation Configuration">
+                        <group >
                             <field name="liana_automation_address"/>
                             <field name="liana_automation_realm"/>
                             <field name="liana_automation_user"/>
@@ -52,6 +52,45 @@
                             </div>
                         </group>
                     </group>
+                    <group string="Liana Mailer Configuration">
+                        <field name="liana_mailer_address"/>
+                            <field name="liana_mailer_realm"/>
+                            <field name="liana_mailer_user"/>
+                            <field name="liana_mailer_secret" password="True"/>
+                            <button
+                                    name="test_mailer_connection"
+                                    type="object"
+                                    string="Test Mailer Connection"
+                                    class="oe_highlight"
+                            />
+                        <notebook colspan="2">
+                            <page string="Field Mappings" name="field_mappings">
+                                <div class="oe_button_box" name="mapping_buttons">
+                                    <button name="action_fetch_liana_properties"
+                                            type="object"
+                                            string="Get Properties"
+                                            icon="fa-refresh"
+                                            class="btn-link"/>
+                                </div>
+                                <field name="mapping_ids">
+                                    <list editable="bottom">
+                                        <field name="contact_field_id"
+                                               domain="[('model', '=', 'mailing.contact')]"/>
+                                        <field name="liana_property_id"
+                                               domain="[('backend_id', '=', parent.id)]"/>
+                                    </list>
+                                </field>
+                            </page>
+                            <page string="Liana Properties" name="liana_properties">
+                                <field name="property_ids" readonly="1">
+                                    <list>
+                                        <field name="name"/>
+                                        <field name="property_type"/>
+                                    </list>
+                                </field>
+                            </page>
+                        </notebook>
+                    </group>
                 </sheet>
             </form>
         </field>
@@ -65,6 +104,7 @@
             <list>
                 <field name="name"/>
                 <field name="liana_automation_address"/>
+                <field name="liana_mailer_address"/>
             </list>
         </field>
     </record>

@@ -1,0 +1,1143 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* connector_liana
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0+e\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-14 08:01+0000\n"
+"PO-Revision-Date: 2026-08-14 08:01+0000\n"
+"Last-Translator: \n"
+"Language-Team: Finnish\n"
+"Language: fi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/ir_actions_server.py:0
+msgid "%(action)s on %(model)s #%(rid)s"
+msgstr "%(action)s mallissa %(model)s #%(rid)s"
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.liana_backend_form
+msgid ""
+"<span invisible=\"liana_channel_id\" class=\"text-muted\">\n"
+"                                    Pick a default channel above to enable.\n"
+"                                </span>"
+msgstr ""
+"<span invisible=\"liana_channel_id\" class=\"text-muted\">\n"
+"                                    Valitse oletuskanava yllä ottaaksesi käyttöön.\n"
+"                                </span>"
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.liana_backend_form
+msgid ""
+"Activate the shipped 'Export lead on stage change' and 'Export sale order on"
+" state change' rules, using this backend and its default channel."
+msgstr ""
+"Aktivoi toimitetut säännöt 'Vie liidi vaiheen muutoksessa' ja 'Vie "
+"myyntitilaus tilan muutoksessa' käyttäen tätä taustajärjestelmää ja sen "
+"oletuskanavaa."
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.view_server_action_kanban_liana
+msgid "Add Liana action"
+msgstr "Lisää Liana-toiminto"
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.view_server_action_kanban_liana
+msgid "Add an action"
+msgstr "Lisää toiminto"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_ir_actions_server__liana_allow_identity_update
+#: model:ir.model.fields,field_description:connector_liana.field_ir_cron__liana_allow_identity_update
+msgid "Allow Identity Update"
+msgstr "Salli identiteetin päivitys"
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_ir_actions_server__liana_allow_identity_update
+#: model:ir.model.fields,help:connector_liana.field_ir_cron__liana_allow_identity_update
+msgid "Allow sending changes to the identity data"
+msgstr "Salli identiteettitietojen muutosten lähettäminen"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_backend__liana_automation_address
+msgid "Automation Address"
+msgstr "Automaation osoite"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_backend__liana_automation_realm
+msgid "Automation Realm"
+msgstr "Automaation realm"
+
+#. module: connector_liana
+#: model:ir.model,name:connector_liana.model_base_automation
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event__base_automation_id
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event_report__base_automation_id
+msgid "Automation Rule"
+msgstr "Automaatiosääntö"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_backend__liana_automation_secret
+msgid "Automation Secret"
+msgstr "Automaation salaisuus"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_backend__liana_automation_user
+msgid "Automation User"
+msgstr "Automaation käyttäjä"
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/ir_actions_server.py:0
+msgid ""
+"Automation rule %(rule)s already has a 'Send Liana Automation Event' action."
+" Each Liana automation may have at most one Liana action."
+msgstr ""
+"Automaatiosäännöllä %(rule)s on jo toiminto 'Lähetä Liana Automation "
+"-tapahtuma'. Jokaisella Liana-automaatiolla saa olla enintään yksi "
+"Liana-toiminto."
+
+#. module: connector_liana
+#: model:ir.ui.menu,name:connector_liana.liana_menu_automations
+msgid "Automations"
+msgstr "Automaatiot"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_channel__backend_id
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event_report__backend_id
+#: model:ir.model.fields,field_description:connector_liana.field_liana_field_mapping__backend_id
+#: model:ir.model.fields,field_description:connector_liana.field_liana_property__backend_id
+#: model_terms:ir.ui.view,arch_db:connector_liana.view_liana_event_report_search
+msgid "Backend"
+msgstr "Taustajärjestelmä"
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.liana_backend_form
+#: model_terms:ir.ui.view,arch_db:connector_liana.liana_backend_search
+msgid "Backend Name"
+msgstr "Taustajärjestelmän nimi"
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_liana_event__backend_id
+msgid "Backend that handled (or should handle, on retry) this event."
+msgstr ""
+"Taustajärjestelmä, joka käsitteli (tai uudelleenyrityksessä käsittelee) "
+"tämän tapahtuman."
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_ir_actions_server__liana_backend_id
+#: model:ir.model.fields,help:connector_liana.field_ir_cron__liana_backend_id
+msgid ""
+"Backend used to send the event. If left empty and exactly one backend "
+"exists, that backend is used."
+msgstr ""
+"Tapahtuman lähettämiseen käytettävä taustajärjestelmä. Jos jätetään "
+"tyhjäksi ja tietokannassa on täsmälleen yksi taustajärjestelmä, sitä "
+"käytetään."
+
+#. module: connector_liana
+#: model:ir.ui.menu,name:connector_liana.liana_menu_backends
+msgid "Backends"
+msgstr "Taustajärjestelmät"
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_liana_backend__liana_mailer_address
+msgid ""
+"Base URL of the LianaMailer REST API, e.g. https://rest.lianamailer.com"
+msgstr ""
+"LianaMailer REST API:n perusosoite, esim. https://rest.lianamailer.com"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_channel__channel_id
+msgid "Channel ID"
+msgstr "Kanavan tunnus"
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_liana_channel__channel_id
+msgid "Channel ID from the Liana Automation API."
+msgstr "Kanavan tunnus Liana Automation API:sta."
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_liana_channel__system_name
+msgid "Channel system name from the Liana Automation API. May be empty."
+msgstr "Kanavan järjestelmänimi Liana Automation API:sta. Voi olla tyhjä."
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_channel__color
+msgid "Color"
+msgstr "Väri"
+
+#. module: connector_liana
+#: model:ir.ui.menu,name:connector_liana.liana_menu_configuration
+msgid "Configuration"
+msgstr "Asetukset"
+
+#. module: connector_liana
+#: model:ir.model,name:connector_liana.model_res_partner
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event__partner_id
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event_report__partner_id
+msgid "Contact"
+msgstr "Yhteystiedot"
+
+#. module: connector_liana
+#: model_terms:ir.actions.act_window,help:connector_liana.action_liana_automation
+msgid "Create your first Liana Automation rule"
+msgstr "Luo ensimmäinen Liana Automation -sääntösi"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_backend__create_uid
+#: model:ir.model.fields,field_description:connector_liana.field_liana_channel__create_uid
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event__create_uid
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event_item__create_uid
+#: model:ir.model.fields,field_description:connector_liana.field_liana_field_mapping__create_uid
+#: model:ir.model.fields,field_description:connector_liana.field_liana_property__create_uid
+msgid "Created by"
+msgstr "Luonut"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_backend__create_date
+#: model:ir.model.fields,field_description:connector_liana.field_liana_channel__create_date
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event__create_date
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event_item__create_date
+#: model:ir.model.fields,field_description:connector_liana.field_liana_field_mapping__create_date
+#: model:ir.model.fields,field_description:connector_liana.field_liana_property__create_date
+msgid "Created on"
+msgstr "Luotu"
+
+#. module: connector_liana
+#: model:ir.actions.act_window,name:connector_liana.action_liana_dashboard
+#: model:ir.ui.menu,name:connector_liana.liana_menu_dashboard
+msgid "Dashboard"
+msgstr "Koontinäyttö"
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_mailing_list__date_liana_export
+msgid "Date of the last export"
+msgstr "Viimeisimmän viennin päivämäärä"
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.liana_backend_form
+msgid "Default Automations"
+msgstr "Oletusautomaatiot"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_backend__liana_channel_id
+msgid "Default Liana Channel"
+msgstr "Oletus-Liana-kanava"
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/liana_backend.py:0
+msgid ""
+"Default Liana automation templates are missing: %s. Reinstall or update the "
+"connector_liana module."
+msgstr ""
+"Lianan oletusautomaatiomallit puuttuvat: %s. Asenna uudelleen tai päivitä "
+"connector_liana-moduuli."
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_base_automation__display_name
+#: model:ir.model.fields,field_description:connector_liana.field_crm_lead__display_name
+#: model:ir.model.fields,field_description:connector_liana.field_ir_actions_server__display_name
+#: model:ir.model.fields,field_description:connector_liana.field_liana_backend__display_name
+#: model:ir.model.fields,field_description:connector_liana.field_liana_channel__display_name
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event__display_name
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event_item__display_name
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event_report__display_name
+#: model:ir.model.fields,field_description:connector_liana.field_liana_field_mapping__display_name
+#: model:ir.model.fields,field_description:connector_liana.field_liana_property__display_name
+#: model:ir.model.fields,field_description:connector_liana.field_mailing_list__display_name
+#: model:ir.model.fields,field_description:connector_liana.field_res_partner__display_name
+msgid "Display Name"
+msgstr "Näyttönimi"
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_mailing_list__liana_truncate
+msgid "Empty the Liana mailing list before exporting its contacts."
+msgstr "Tyhjennä Lianan postituslista ennen yhteystietojen vientiä."
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event_report__create_date
+msgid "Event Date"
+msgstr "Tapahtuman päivämäärä"
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.view_liana_event_report_search
+msgid "Event Date: Day"
+msgstr "Tapahtuman päivämäärä: Päivä"
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.view_liana_event_report_search
+msgid "Event Date: Month"
+msgstr "Tapahtuman päivämäärä: Kuukausi"
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.view_liana_event_report_search
+msgid "Event Date: Week"
+msgstr "Tapahtuman päivämäärä: Viikko"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_ir_actions_server__liana_event_item_ids
+#: model:ir.model.fields,field_description:connector_liana.field_ir_cron__liana_event_item_ids
+#: model_terms:ir.ui.view,arch_db:connector_liana.view_server_action_form_liana
+msgid "Event Items"
+msgstr "Tapahtuman kohteet"
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.view_liana_event_report_search
+msgid "Event Type"
+msgstr "Tapahtumatyyppi"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_ir_actions_server__liana_event_verb
+#: model:ir.model.fields,field_description:connector_liana.field_ir_cron__liana_event_verb
+msgid "Event Verb"
+msgstr "Tapahtuman verbi"
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.view_liana_event_form
+msgid "Event name"
+msgstr "Tapahtuman nimi"
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/liana_event.py:0
+msgid "Event payload was sent to Liana Automation."
+msgstr "Tapahtuman hyötykuorma lähetettiin Liana Automationiin."
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_ir_actions_server__liana_event_verb
+#: model:ir.model.fields,help:connector_liana.field_ir_cron__liana_event_verb
+msgid ""
+"Event type. May contain only basic lowercase characters (a-z, not "
+"ä,ö,å,é,...), numbers and underscores."
+msgstr ""
+"Tapahtumatyyppi. Saa sisältää vain peruspienikirjaimia (a-z, ei "
+"ä,ö,å,é,...), numeroita ja alaviivoja."
+
+#. module: connector_liana
+#: model:ir.actions.act_window,name:connector_liana.action_liana_event
+#: model:ir.ui.menu,name:connector_liana.liana_menu_events
+msgid "Events"
+msgstr "Tapahtumat"
+
+#. module: connector_liana
+#: model:ir.model.fields.selection,name:connector_liana.selection__liana_event__state__failed
+#: model:ir.model.fields.selection,name:connector_liana.selection__liana_event_report__state__failed
+msgid "Export Failed"
+msgstr "Vienti epäonnistui"
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.mailing_list_view_form_liana
+msgid "Export to Liana"
+msgstr "Vie Lianaaan"
+
+#. module: connector_liana
+#: model:ir.model.fields.selection,name:connector_liana.selection__liana_event__state__exported
+#: model:ir.model.fields.selection,name:connector_liana.selection__liana_event_report__state__exported
+#: model_terms:ir.ui.view,arch_db:connector_liana.view_liana_event_report_search
+msgid "Exported"
+msgstr "Viety"
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/mailing_list.py:0
+msgid "Exported %s recipient(s) to Liana Mailer."
+msgstr "Vietiin %s vastaanottajaa Liana Maileriin."
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_crm_lead__liana_extra1
+#: model:ir.model.fields,help:connector_liana.field_procountor_res_partner__liana_extra1
+#: model:ir.model.fields,help:connector_liana.field_res_partner__liana_extra1
+#: model:ir.model.fields,help:connector_liana.field_res_users__liana_extra1
+msgid "External unique identifier sent to Liana Automation as 'extra1'."
+msgstr ""
+"Ulkoinen yksilöivä tunniste, joka lähetetään Liana Automationiin kenttänä "
+"'extra1'."
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.view_liana_event_report_search
+msgid "Failed"
+msgstr "Epäonnistui"
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/liana_backend.py:0
+msgid "Fetched %s channel(s) from Liana Automation."
+msgstr "Noudettiin %s kanavaa Liana Automationista."
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/liana_backend.py:0
+msgid "Fetched %s propert(y/ies) from Liana Mailer."
+msgstr "Noudettiin %s ominaisuutta Liana Mailerista."
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_backend__mapping_ids
+#: model_terms:ir.ui.view,arch_db:connector_liana.liana_backend_form
+msgid "Field Mappings"
+msgstr "Kenttäkartoitukset"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event_item__field_ttype
+msgid "Field Type"
+msgstr "Kentän tyyppi"
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_liana_field_mapping__contact_field_id
+msgid "Field on the mailing contact whose value is exported."
+msgstr "Postitusyhteystiedon kenttä, jonka arvo viedään."
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_liana_event_item__subfield_id
+msgid ""
+"Field read from the target record when the source field is Many2one, "
+"One2many or Many2many."
+msgstr ""
+"Kohdetietueesta luettava kenttä, kun lähdekenttä on Many2one, One2many tai "
+"Many2many."
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_liana_event_item__field_id
+msgid "Field read from the triggering record."
+msgstr "Käynnistävästä tietueesta luettava kenttä."
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_liana_event_item__field_relation
+msgid "For relationship fields, the technical name of the target model"
+msgstr "Suhdekentille kohdemallin tekninen nimi"
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.liana_backend_form
+msgid "Get Channels"
+msgstr "Hae kanavat"
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.liana_backend_form
+msgid "Get Properties"
+msgstr "Hae ominaisuudet"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_field_mapping__liana_property_handle
+#: model:ir.model.fields,field_description:connector_liana.field_liana_property__handle
+msgid "Handle"
+msgstr "Tunniste"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_base_automation__id
+#: model:ir.model.fields,field_description:connector_liana.field_crm_lead__id
+#: model:ir.model.fields,field_description:connector_liana.field_ir_actions_server__id
+#: model:ir.model.fields,field_description:connector_liana.field_liana_backend__id
+#: model:ir.model.fields,field_description:connector_liana.field_liana_channel__id
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event__id
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event_item__id
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event_report__id
+#: model:ir.model.fields,field_description:connector_liana.field_liana_field_mapping__id
+#: model:ir.model.fields,field_description:connector_liana.field_liana_property__id
+#: model:ir.model.fields,field_description:connector_liana.field_mailing_list__id
+#: model:ir.model.fields,field_description:connector_liana.field_res_partner__id
+msgid "ID"
+msgstr "ID"
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_mailing_list__liana_list_id
+msgid ""
+"Identifier of the corresponding mailing list in Liana Mailer. Set "
+"automatically on the first export."
+msgstr ""
+"Vastaavan postituslistan tunniste Liana Mailerissa. Asetetaan "
+"automaattisesti ensimmäisessä viennissä."
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_ir_actions_server__liana_identity_field_id
+#: model:ir.model.fields,field_description:connector_liana.field_ir_cron__liana_identity_field_id
+msgid "Identity Field"
+msgstr "Identiteettikenttä"
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.liana_backend_form
+msgid "Install default automations"
+msgstr "Asenna oletusautomaatiot"
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/liana_backend.py:0
+msgid "Installed %s default Liana automation(s) using channel %s."
+msgstr "Asennettiin %s Lianan oletusautomaatiota käyttäen kanavaa %s."
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/liana_event.py:0
+msgid "Invalid JSON in payload: %s"
+msgstr "Virheellinen JSON hyötykuormassa: %s"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event_item__key
+msgid "Key"
+msgstr "Avain"
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_liana_event_item__key
+msgid ""
+"Key used in the Liana event 'items' payload. For One2many/Many2many fields, "
+"each linked record produces '<key>_1', '<key>_2', ... entries. May contain "
+"only lowercase ASCII letters (a-z), digits, underscores and dash-characters."
+msgstr ""
+"Avain Lianan tapahtuman 'items'-hyötykuormassa. One2many/Many2many-kentille "
+"jokainen linkitetty tietue tuottaa merkinnät '<key>_1', '<key>_2', ... "
+"Saa sisältää vain ASCII-pienikirjaimia (a-z), numeroita, alaviivoja ja "
+"viivoja."
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_mailing_list__date_liana_export
+msgid "Last Export"
+msgstr "Viimeisin vienti"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_backend__write_uid
+#: model:ir.model.fields,field_description:connector_liana.field_liana_channel__write_uid
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event__write_uid
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event_item__write_uid
+#: model:ir.model.fields,field_description:connector_liana.field_liana_field_mapping__write_uid
+#: model:ir.model.fields,field_description:connector_liana.field_liana_property__write_uid
+msgid "Last Updated by"
+msgstr "Viimeksi päivittänyt"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_backend__write_date
+#: model:ir.model.fields,field_description:connector_liana.field_liana_channel__write_date
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event__write_date
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event_item__write_date
+#: model:ir.model.fields,field_description:connector_liana.field_liana_field_mapping__write_date
+#: model:ir.model.fields,field_description:connector_liana.field_liana_property__write_date
+msgid "Last Updated on"
+msgstr "Viimeksi päivitetty"
+
+#. module: connector_liana
+#: model:ir.model,name:connector_liana.model_crm_lead
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event__lead_id
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event_report__lead_id
+msgid "Lead"
+msgstr "Liidi"
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.view_server_action_form_liana
+msgid "Leave empty when there is exactly one backend in the database."
+msgstr ""
+"Jätä tyhjäksi, kun tietokannassa on täsmälleen yksi taustajärjestelmä."
+
+#. module: connector_liana
+#: model:ir.ui.menu,name:connector_liana.liana_menu_root
+msgid "Liana"
+msgstr "Liana"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_base_automation__liana_action_server_count
+msgid "Liana Action Server Count"
+msgstr "Liana-palvelintoimintojen määrä"
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.liana_backend_form
+msgid "Liana Automation Configuration"
+msgstr "Liana Automation -asetukset"
+
+#. module: connector_liana
+#: model:ir.model,name:connector_liana.model_liana_event
+msgid "Liana Automation Event"
+msgstr "Liana Automation -tapahtuma"
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/liana_backend.py:0
+#: model:ir.actions.act_window,name:connector_liana.action_liana_automation
+msgid "Liana Automations"
+msgstr "Liana-automaatiot"
+
+#. module: connector_liana
+#: model_terms:ir.actions.act_window,help:connector_liana.action_liana_automation
+msgid ""
+"Liana Automations are <em>Automation Rules</em> that include at\n"
+"                least one server action of type <em>Send Liana Automation Event</em>."
+msgstr ""
+"Liana-automaatiot ovat <em>automaatiosääntöjä</em>, joissa on vähintään\n"
+"                yksi palvelintoiminto tyyppiä <em>Lähetä Liana Automation "
+"-tapahtuma</em>."
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_ir_actions_server__liana_backend_id
+#: model:ir.model.fields,field_description:connector_liana.field_ir_cron__liana_backend_id
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event__backend_id
+#: model:ir.model.fields,field_description:connector_liana.field_mailing_list__liana_backend_id
+msgid "Liana Backend"
+msgstr "Liana-taustajärjestelmä"
+
+#. module: connector_liana
+#: model:ir.actions.act_window,name:connector_liana.liana_backend_action
+msgid "Liana Backends"
+msgstr "Liana-taustajärjestelmät"
+
+#. module: connector_liana
+#: model:ir.model,name:connector_liana.model_liana_channel
+#: model:ir.model.fields,field_description:connector_liana.field_ir_actions_server__liana_channel_id
+#: model:ir.model.fields,field_description:connector_liana.field_ir_cron__liana_channel_id
+msgid "Liana Channel"
+msgstr "Liana-kanava"
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/liana_backend.py:0
+msgid "Liana Channels"
+msgstr "Liana-kanavat"
+
+#. module: connector_liana
+#: model:ir.model,name:connector_liana.model_liana_event_item
+msgid "Liana Event Item Mapping"
+msgstr "Liana-tapahtumakohteen kartoitus"
+
+#. module: connector_liana
+#: model:ir.model,name:connector_liana.model_liana_event_report
+msgid "Liana Event Statistics"
+msgstr "Liana-tapahtumatilastot"
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.view_liana_event_report_graph
+#: model_terms:ir.ui.view,arch_db:connector_liana.view_liana_event_report_pivot
+#: model_terms:ir.ui.view,arch_db:connector_liana.view_liana_event_report_search
+msgid "Liana Events"
+msgstr "Liana-tapahtumat"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_crm_lead__liana_extra1
+#: model:ir.model.fields,field_description:connector_liana.field_procountor_res_partner__liana_extra1
+#: model:ir.model.fields,field_description:connector_liana.field_res_partner__liana_extra1
+#: model:ir.model.fields,field_description:connector_liana.field_res_users__liana_extra1
+msgid "Liana ID"
+msgstr "Liana-tunnus"
+
+#. module: connector_liana
+#: model:ir.model,name:connector_liana.model_liana_backend
+msgid "Liana Integration Backend Configuration"
+msgstr "Liana-integraation taustajärjestelmäasetukset"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_mailing_list__liana_list_id
+msgid "Liana List ID"
+msgstr "Liana-listan tunnus"
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/mailing_list.py:0
+#: model_terms:ir.ui.view,arch_db:connector_liana.mailing_list_view_form_liana
+msgid "Liana Mailer"
+msgstr "Liana Mailer"
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.liana_backend_form
+msgid "Liana Mailer Configuration"
+msgstr "Liana Mailer -asetukset"
+
+#. module: connector_liana
+#: model:ir.model,name:connector_liana.model_liana_field_mapping
+msgid "Liana Mailer Field Mapping"
+msgstr "Liana Mailer -kenttäkartoitus"
+
+#. module: connector_liana
+#: model:ir.model,name:connector_liana.model_liana_property
+msgid "Liana Mailer Property"
+msgstr "Liana Mailer -ominaisuus"
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/liana_backend.py:0
+msgid "Liana Mailer connection successful!"
+msgstr "Yhteys Liana Maileriin onnistui!"
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/liana_backend.py:0
+#: model:ir.model.fields,field_description:connector_liana.field_liana_backend__property_ids
+#: model_terms:ir.ui.view,arch_db:connector_liana.liana_backend_form
+msgid "Liana Properties"
+msgstr "Liana-ominaisuudet"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_field_mapping__liana_property_id
+msgid "Liana Property"
+msgstr "Liana-ominaisuus"
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/ir_actions_server.py:0
+msgid "Liana action %s has no model."
+msgstr "Liana-toiminnolla %s ei ole mallia."
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/ir_actions_server.py:0
+msgid "Liana action requires a channel."
+msgstr "Liana-toiminto edellyttää kanavaa."
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/ir_actions_server.py:0
+msgid "Liana action requires an event verb."
+msgstr "Liana-toiminto edellyttää tapahtuman verbiä."
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/ir_actions_server.py:0
+msgid ""
+"Liana action requires an identity field unless the model is res.partner or "
+"crm.lead."
+msgstr ""
+"Liana-toiminto edellyttää identiteettikenttää, ellei malli ole res.partner "
+"tai crm.lead."
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_mailing_list__liana_backend_id
+msgid "Liana backend used when exporting this list to Liana Mailer."
+msgstr ""
+"Liana-taustajärjestelmä, jota käytetään vietäessä tätä listaa Liana "
+"Maileriin."
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/ir_actions_server.py:0
+msgid "Liana channel %(channel)s does not belong to backend %(backend)s."
+msgstr ""
+"Liana-kanava %(channel)s ei kuulu taustajärjestelmään %(backend)s."
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/liana_event_item.py:0
+msgid ""
+"Liana event item %(key)r: a sub-field can only be set when the source field "
+"is Many2one, One2many or Many2many."
+msgstr ""
+"Liana-tapahtumakohde %(key)r: alakenttä voidaan asettaa vain, kun "
+"lähdekenttä on Many2one, One2many tai Many2many."
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/liana_event_item.py:0
+msgid ""
+"Liana event item %(key)r: a sub-field is required when the source field "
+"%(field)r is %(ttype)s."
+msgstr ""
+"Liana-tapahtumakohde %(key)r: alakenttä on pakollinen, kun lähdekenttä "
+"%(field)r on tyyppiä %(ttype)s."
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/liana_event_item.py:0
+msgid ""
+"Liana event item %(key)r: sub-field %(sub)r must belong to model %(model)r."
+msgstr ""
+"Liana-tapahtumakohde %(key)r: alakentän %(sub)r on kuuluttava malliin "
+"%(model)r."
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/liana_event_item.py:0
+msgid ""
+"Liana event item key %(key)r is invalid. It may only contain lowercase ASCII"
+" letters (a-z), digits (0-9), underscores (_) and dash-characters (-)."
+msgstr ""
+"Liana-tapahtumakohteen avain %(key)r on virheellinen. Se saa sisältää vain "
+"ASCII-pienikirjaimia (a-z), numeroita (0-9), alaviivoja (_) ja viivoja (-)."
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/liana_event_item.py:0
+msgid ""
+"Liana event item key %(key)r is used more than once on action %(action)s."
+msgstr ""
+"Liana-tapahtumakohteen avainta %(key)r käytetään useammin kuin kerran "
+"toiminnossa %(action)s."
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/ir_actions_server.py:0
+msgid ""
+"Liana event verb %(verb)r is invalid. It may only contain lowercase ASCII "
+"letters (a-z), digits (0-9) and underscores (_)."
+msgstr ""
+"Liana-tapahtuman verbi %(verb)r on virheellinen. Se saa sisältää vain "
+"ASCII-pienikirjaimia (a-z), numeroita (0-9) ja alaviivoja (_)."
+
+#. module: connector_liana
+#: model_terms:ir.actions.act_window,help:connector_liana.action_liana_dashboard
+msgid ""
+"Liana events appear here once your Liana automations fire.\n"
+"                Use the graph and pivot views to analyse event volume and\n"
+"                the number of contacts that triggered them over time."
+msgstr ""
+"Liana-tapahtumat näkyvät täällä, kun Liana-automaatiosi käynnistyvät.\n"
+"                Käytä kuvaaja- ja pivot-näkymiä analysoidaksesi tapahtumien "
+"määrää ja\n"
+"                niitä käynnistäneiden yhteystietojen määrää ajan kuluessa."
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_liana_event__lead_id
+msgid "Liana identity record when it is a crm.lead."
+msgstr "Liana-identiteettitietue, kun se on crm.lead."
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_liana_event__partner_id
+msgid "Liana identity record when it is a res.partner."
+msgstr "Liana-identiteettitietue, kun se on res.partner."
+
+#. module: connector_liana
+#: model:ir.actions.server,name:connector_liana.ir_cron_export_mailing_lists_to_liana_ir_actions_server
+msgid "Liana: Export Mailing Lists"
+msgstr "Liana: Vie postituslistat"
+
+#. module: connector_liana
+#: model:base.automation,name:connector_liana.base_automation_crm_lead_stage_changed
+msgid "Liana: Export lead on stage change"
+msgstr "Liana: Vie liidi vaiheen muutoksessa"
+
+#. module: connector_liana
+#: model:base.automation,name:connector_liana.base_automation_sale_order_state_changed
+msgid "Liana: Export sale order on state change"
+msgstr "Liana: Vie myyntitilaus tilan muutoksessa"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_backend__liana_mailer_address
+msgid "Mailer Address"
+msgstr "Mailerin osoite"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_backend__liana_mailer_realm
+msgid "Mailer Realm"
+msgstr "Mailerin realm"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_backend__liana_mailer_secret
+msgid "Mailer Secret"
+msgstr "Mailerin salaisuus"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_backend__liana_mailer_user
+msgid "Mailer User"
+msgstr "Mailerin käyttäjä"
+
+#. module: connector_liana
+#: model:ir.model,name:connector_liana.model_mailing_list
+msgid "Mailing List"
+msgstr "Postituslista"
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_ir_actions_server__liana_identity_field_id
+#: model:ir.model.fields,help:connector_liana.field_ir_cron__liana_identity_field_id
+msgid ""
+"Many2one field on the model pointing to the res.partner or crm.lead record "
+"used as the Liana identity. Leave empty when the model itself is res.partner"
+" or crm.lead."
+msgstr ""
+"Mallin Many2one-kenttä, joka viittaa Liana-identiteettinä käytettävään "
+"res.partner- tai crm.lead-tietueeseen. Jätä tyhjäksi, kun malli itse on "
+"res.partner tai crm.lead."
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_ir_actions_server__liana_event_item_ids
+#: model:ir.model.fields,help:connector_liana.field_ir_cron__liana_event_item_ids
+msgid ""
+"Mapping of payload keys to fields on the triggering record. Relational "
+"source fields can drill into a sub-field on the linked record(s); One2many "
+"and Many2many fields expand into multiple indexed keys (e.g. line_name_1, "
+"line_name_2)."
+msgstr ""
+"Hyötykuorman avainten kartoitus käynnistävän tietueen kenttiin. "
+"Suhdelähdekentät voivat lukea alakentän linkitetyistä tietueista; "
+"One2many- ja Many2many-kentät laajenevat useiksi indeksoiduiksi avaimiksi "
+"(esim. line_name_1, line_name_2)."
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_liana_event_item__model_id
+msgid "Model on which the server action runs."
+msgstr "Malli, jossa palvelintoiminto suoritetaan."
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_backend__name
+#: model:ir.model.fields,field_description:connector_liana.field_liana_channel__name
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event__name
+#: model:ir.model.fields,field_description:connector_liana.field_liana_property__name
+msgid "Name"
+msgstr "Nimi"
+
+#. module: connector_liana
+#: model:ir.model.fields.selection,name:connector_liana.selection__liana_event__state__new
+#: model:ir.model.fields.selection,name:connector_liana.selection__liana_event_report__state__new
+#: model_terms:ir.ui.view,arch_db:connector_liana.view_liana_event_report_search
+msgid "New"
+msgstr "Uusi"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_ir_actions_server__liana_no_duplicates
+#: model:ir.model.fields,field_description:connector_liana.field_ir_cron__liana_no_duplicates
+msgid "No Duplicates"
+msgstr "Ei kaksoiskappaleita"
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/mailing_list.py:0
+msgid "No Liana backend configured for this mailing list."
+msgstr "Tälle postituslistalle ei ole määritetty Liana-taustajärjestelmää."
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/ir_actions_server.py:0
+msgid ""
+"No Liana backend configured. Set 'Liana Backend' on the action or create a "
+"single backend record."
+msgstr ""
+"Liana-taustajärjestelmää ei ole määritetty. Aseta toiminnolle "
+"'Liana-taustajärjestelmä' tai luo yksi taustajärjestelmätietue."
+
+#. module: connector_liana
+#: model_terms:ir.actions.act_window,help:connector_liana.action_liana_dashboard
+msgid "No Liana events yet"
+msgstr "Ei vielä Liana-tapahtumia"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_field_mapping__contact_field_id
+msgid "Odoo Contact Field"
+msgstr "Odoon yhteystietokenttä"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event__payload
+#: model_terms:ir.ui.view,arch_db:connector_liana.view_liana_event_form
+msgid "Payload"
+msgstr "Hyötykuorma"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event__payload_text
+msgid "Payload (JSON)"
+msgstr "Hyötykuorma (JSON)"
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/liana_event.py:0
+msgid "Payload is not valid JSON: %s"
+msgstr "Hyötykuorma ei ole kelvollista JSONia: %s"
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/liana_backend.py:0
+msgid ""
+"Pick a default Liana channel before installing the default automations."
+msgstr ""
+"Valitse oletus-Liana-kanava ennen oletusautomaatioiden asentamista."
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.view_server_action_form_liana
+msgid "Pick a partner/lead field..."
+msgstr "Valitse kumppani-/liidikenttä..."
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/liana_backend.py:0
+msgid "Please fill in all Liana Mailer settings first."
+msgstr "Täytä ensin kaikki Liana Mailer -asetukset."
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_liana_field_mapping__liana_property_handle
+#: model:ir.model.fields,help:connector_liana.field_liana_property__handle
+msgid "Property handle from the Liana Mailer API."
+msgstr "Ominaisuuden tunniste Liana Mailer API:sta."
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_liana_property__name
+msgid "Property name from the Liana Mailer API."
+msgstr "Ominaisuuden nimi Liana Mailer API:sta."
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event_item__field_relation
+msgid "Related Model"
+msgstr "Liittyvä malli"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event__response
+#: model_terms:ir.ui.view,arch_db:connector_liana.view_liana_event_form
+msgid "Response"
+msgstr "Vastaus"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_ir_actions_server__liana_sample_payload
+#: model:ir.model.fields,field_description:connector_liana.field_ir_cron__liana_sample_payload
+msgid "Sample Payload"
+msgstr "Esimerkkihyötykuorma"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_ir_actions_server__liana_send_extra1
+#: model:ir.model.fields,field_description:connector_liana.field_ir_cron__liana_send_extra1
+msgid "Send Extra1"
+msgstr "Lähetä Extra1"
+
+#. module: connector_liana
+#: model:ir.model.fields.selection,name:connector_liana.selection__ir_actions_server__state__liana
+msgid "Send Liana Automation Event"
+msgstr "Lähetä Liana Automation -tapahtuma"
+
+#. module: connector_liana
+#: model:ir.actions.server,name:connector_liana.ir_actions_server_crm_lead_stage_changed
+msgid "Send lead to Liana Automation"
+msgstr "Lähetä liidi Liana Automationiin"
+
+#. module: connector_liana
+#: model:ir.actions.server,name:connector_liana.ir_actions_server_sale_order_state_changed
+msgid "Send sale order to Liana Automation"
+msgstr "Lähetä myyntitilaus Liana Automationiin"
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.view_liana_event_form
+msgid "Send to Liana Automation"
+msgstr "Lähetä Liana Automationiin"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event_item__sequence
+msgid "Sequence"
+msgstr "Järjestys"
+
+#. module: connector_liana
+#: model:ir.model,name:connector_liana.model_ir_actions_server
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event__action_id
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event_item__action_id
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event_report__action_id
+#: model_terms:ir.ui.view,arch_db:connector_liana.view_liana_event_report_search
+msgid "Server Action"
+msgstr "Palvelintoiminto"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event_item__field_id
+msgid "Source Field"
+msgstr "Lähdekenttä"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event__res_model
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event_item__model_id
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event_report__res_model
+#: model_terms:ir.ui.view,arch_db:connector_liana.view_liana_event_report_search
+msgid "Source Model"
+msgstr "Lähdemalli"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event__res_id
+msgid "Source Record ID"
+msgstr "Lähdetietueen tunnus"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event__state
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event_report__state
+#: model_terms:ir.ui.view,arch_db:connector_liana.view_liana_event_report_search
+msgid "State"
+msgstr "Tila"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_event_item__subfield_id
+msgid "Sub-field"
+msgstr "Alakenttä"
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/liana_backend.py:0
+#: code:addons/connector_liana/models/liana_event.py:0
+msgid "Success"
+msgstr "Onnistui"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_liana_channel__system_name
+msgid "System Name"
+msgstr "Järjestelmänimi"
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.liana_backend_form
+msgid "Test Automation Connection"
+msgstr "Testaa automaatioyhteys"
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.liana_backend_form
+msgid "Test Mailer Connection"
+msgstr "Testaa Mailer-yhteys"
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/liana_event.py:0
+msgid "There is no payload to send."
+msgstr "Lähetettävää hyötykuormaa ei ole."
+
+#. module: connector_liana
+#. odoo-python
+#: code:addons/connector_liana/models/liana_event.py:0
+msgid "This event has no Liana backend assigned."
+msgstr "Tälle tapahtumalle ei ole määritetty Liana-taustajärjestelmää."
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.view_liana_event_report_search
+msgid "Trailing 12 months"
+msgstr "Viimeiset 12 kuukautta"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_mailing_list__liana_truncate
+msgid "Truncate on Export"
+msgstr "Tyhjennä viennissä"
+
+#. module: connector_liana
+#: model:ir.model.fields,field_description:connector_liana.field_ir_actions_server__state
+#: model:ir.model.fields,field_description:connector_liana.field_ir_cron__state
+#: model:ir.model.fields,field_description:connector_liana.field_liana_channel__channel_type
+#: model:ir.model.fields,field_description:connector_liana.field_liana_property__property_type
+msgid "Type"
+msgstr "Tyyppi"
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_ir_actions_server__state
+#: model:ir.model.fields,help:connector_liana.field_ir_cron__state
+msgid ""
+"Type of server action. The following values are available:\n"
+"- 'Update a Record': update the values of a record\n"
+"- 'Create Activity': create an activity (Discuss)\n"
+"- 'Send Email': post a message, a note or send an email (Discuss)\n"
+"- 'Send SMS': send SMS, log them on documents (SMS)- 'Add/Remove Followers': add or remove followers to a record (Discuss)\n"
+"- 'Create Record': create a new record with new values\n"
+"- 'Execute Code': a block of Python code that will be executed\n"
+"- 'Send Webhook Notification': send a POST request to an external system, also known as a Webhook\n"
+"- 'Multi Actions': define an action that triggers several other server actions\n"
+msgstr ""
+"Palvelintoiminnon tyyppi. Saatavilla seuraavat arvot:\n"
+"- 'Päivitä tietue': päivitä tietueen arvot\n"
+"- 'Luo toiminto': luo toiminnon (Viestintä)\n"
+"- 'Lähetä sähköposti': lähettää viestin, huomautuksen tai sähköpostin (Viestintä)\n"
+"- 'Lähetä tekstiviesti': lähetä tekstiviestejä, kirjaa ne asiakirjoihin (Tekstiviesti)- Lisää/Poista seuraajia: lisää tai poista seuraajia tietueesta (Viestintä)\n"
+"- 'Luo tietue': luo uusi tietue uusilla arvoilla\n"
+"- 'Suorita koodi': Python-koodin pätkä, joka suoritetaan\n"
+"- 'Lähetä Webhook-ilmoitus': lähetä POST-pyyntö ulkoiseen järjestelmään, joka tunnetaan myös nimellä Webhook\n"
+"- 'Suorita useita toimintoja': Määritä toiminto, joka käynnistää useita muita palvelintoimintoja\n"
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_ir_actions_server__liana_send_extra1
+#: model:ir.model.fields,help:connector_liana.field_ir_cron__liana_send_extra1
+msgid ""
+"When enable, identifying key 'Extra1' is send to allow Liana to keep track "
+"of identities when other data such as email address is changed."
+msgstr ""
+"Kun käytössä, tunnistava avain 'Extra1' lähetetään, jotta Liana voi "
+"seurata identiteettejä, kun muita tietoja kuten sähköpostiosoite muuttuu."
+
+#. module: connector_liana
+#: model:ir.model.fields,help:connector_liana.field_ir_actions_server__liana_no_duplicates
+#: model:ir.model.fields,help:connector_liana.field_ir_cron__liana_no_duplicates
+msgid "When enabled, Liana Automation will ignore duplicate events."
+msgstr "Kun käytössä, Liana Automation ohittaa kaksoistapahtumat."
+
+#. module: connector_liana
+#: model_terms:ir.ui.view,arch_db:connector_liana.view_server_action_form_liana
+msgid "e.g. order, subscribe"
+msgstr "esim. order, subscribe"
