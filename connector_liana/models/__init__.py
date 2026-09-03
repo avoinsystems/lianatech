@@ -2,7 +2,7 @@ from . import liana_backend
 from . import liana_channel
 from . import liana_property
 from . import liana_field_mapping
-from . import mailing_list
+from . import liana_mailing_list
 from . import liana_event_item
 from . import ir_actions_server
 from . import base_automation

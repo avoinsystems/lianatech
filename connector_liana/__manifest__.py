@@ -9,7 +9,6 @@
         "base_automation",
         "crm",
         "sale",
-        "mass_mailing",
     ],
     "data": [
         "security/ir.model.access.csv",
@@ -22,7 +21,7 @@
         "views/liana_dashboard_views.xml",
         "views/crm_lead_views.xml",
         "views/res_partner_views.xml",
-        "views/mailing_list_views.xml",
+        "views/liana_mailing_list_views.xml",
         "views/menus.xml",
         "data/default_automations.xml",
     ],

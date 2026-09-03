@@ -5,5 +5,6 @@ liana_channel_rule_manager,Liana Channel Manager Access,model_liana_channel,base
 liana_property_rule_manager,Liana Property Manager Access,model_liana_property,base.group_system,1,1,1,1
 liana_field_mapping_rule_manager,Liana Field Mapping Manager Access,model_liana_field_mapping,base.group_system,1,1,1,1
 liana_event_item_rule_manager,Liana Event Item Manager Access,model_liana_event_item,base.group_system,1,1,1,1
+liana_mailing_list_rule_manager,Liana Mailing List Manager Access,model_liana_mailing_list,base.group_system,1,1,1,1
 liana_event_report_rule_user,Liana Event Report Read,model_liana_event_report,base.group_user,1,0,0,0
 liana_event_report_rule_manager,Liana Event Report Manager,model_liana_event_report,base.group_system,1,0,0,0

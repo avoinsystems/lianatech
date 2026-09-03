@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="liana_mailing_list_view_list" model="ir.ui.view">
+        <field name="name">liana.mailing.list.list</field>
+        <field name="model">liana.mailing.list</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="recipient_mode"/>
+                <field name="partner_count"/>
+                <field name="liana_list_id"/>
+                <field name="date_liana_export"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="liana_mailing_list_view_form" model="ir.ui.view">
+        <field name="name">liana.mailing.list.form</field>
+        <field name="model">liana.mailing.list</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_export_to_liana"
+                            string="Export to Liana"
+                            type="object"
+                            class="btn btn-secondary"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="List Name"/>
+                        </h1>
+                    </div>
+                    <group string="Liana Mailer">
+                        <field name="liana_backend_id"/>
+                        <field name="liana_list_id" readonly="1"/>
+                        <field name="liana_truncate" widget="boolean_toggle"/>
+                        <field name="date_liana_export"/>
+                    </group>
+                    <notebook>
+                        <page string="Recipients" name="recipients">
+                            <group>
+                                <field name="recipient_mode" widget="radio"/>
+                                <field name="partner_domain"
+                                       widget="domain"
+                                       options="{'model': 'res.partner'}"
+                                       invisible="recipient_mode != 'domain'"/>
+                            </group>
+                            <field name="partner_ids"
+                                   invisible="recipient_mode != 'manual'">
+                                <list>
+                                    <field name="display_name"/>
+                                    <field name="email"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="liana_mailing_list_view_search" model="ir.ui.view">
+        <field name="name">liana.mailing.list.search</field>
+        <field name="model">liana.mailing.list</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name" string="List Name"/>
+                <field name="partner_ids" string="Recipient"/>
+                <field name="liana_backend_id"/>
+                <filter name="filter_manual_recipients"
+                        string="Selected Contacts"
+                        domain="[('recipient_mode', '=', 'manual')]"/>
+                <filter name="filter_domain_recipients"
+                        string="Search Domain"
+                        domain="[('recipient_mode', '=', 'domain')]"/>
+                <separator/>
+                <filter name="filter_never_exported"
+                        string="Never Exported"
+                        domain="[('date_liana_export', '=', False)]"/>
+                <group colspan="16">
+                    <filter name="group_by_recipient_mode"
+                            string="Recipient Selection"
+                            context="{'group_by': 'recipient_mode'}"/>
+                    <filter name="group_by_backend"
+                            string="Liana Backend"
+                            context="{'group_by': 'liana_backend_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_liana_mailing_list" model="ir.actions.act_window">
+        <field name="name">Liana Mailing Lists</field>
+        <field name="res_model">liana.mailing.list</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first Liana mailing list
+            </p>
+            <p>
+                Group contacts into a list and export them to Liana Mailer,
+                either manually or through the scheduled export.
+            </p>
+        </field>
+    </record>
+</odoo>

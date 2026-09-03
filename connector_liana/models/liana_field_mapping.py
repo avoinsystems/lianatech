@@ -12,13 +12,13 @@ class LianaFieldMapping(models.Model):
         ondelete="cascade",
         index=True,
     )
-    contact_field_id = fields.Many2one(
+    partner_field_id = fields.Many2one(
         comodel_name="ir.model.fields",
-        string="Odoo Contact Field",
+        string="Odoo Partner Field",
         required=True,
         ondelete="cascade",
-        domain="[('model', '=', 'mailing.contact')]",
-        help="Field on the mailing contact whose value is exported.",
+        domain="[('model', '=', 'res.partner')]",
+        help="Field on the contact whose value is exported.",
     )
     liana_property_id = fields.Many2one(
         comodel_name="liana.property",
@@ -36,7 +36,7 @@ class LianaFieldMapping(models.Model):
     _sql_constraints = [
         (
             "mapping_field_unique",
-            "UNIQUE(backend_id, contact_field_id)",
-            "A contact field can only be mapped once per backend.",
+            "UNIQUE(backend_id, partner_field_id)",
+            "A partner field can only be mapped once per backend.",
         ),
     ]

@@ -46,6 +46,15 @@
         sequence="20"
     />
 
+    <!-- Menu item for Liana Mailing Lists -->
+    <menuitem
+        id="liana_menu_mailing_lists"
+        name="Mailing Lists"
+        parent="liana_menu_configuration"
+        action="action_liana_mailing_list"
+        sequence="25"
+    />
+
     <!-- Liana Backends Menu Item -->
     <menuitem
         id="liana_menu_backends"

@@ -1,17 +1,52 @@
 import json
 import logging
+from ast import literal_eval
 
-from odoo import _, fields, models
-from odoo.exceptions import UserError
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError, ValidationError
+from odoo.fields import Domain
 
 from .liana_backend import LianaError
 
 _logger = logging.getLogger(__name__)
 
 
-class MailingList(models.Model):
-    _inherit = "mailing.list"
+class LianaMailingList(models.Model):
+    _name = "liana.mailing.list"
+    _description = "Liana Mailing List"
+    _order = "name"
 
+    name = fields.Char(required=True)
+    recipient_mode = fields.Selection(
+        selection=[
+            ("manual", "Selected Contacts"),
+            ("domain", "Search Domain"),
+        ],
+        string="Recipient Selection",
+        required=True,
+        default="manual",
+        help="Selected Contacts: recipients are picked one by one.\n"
+             "Search Domain: every contact matching the domain is a recipient, "
+             "the domain being re-evaluated on each export.",
+    )
+    partner_ids = fields.Many2many(
+        comodel_name="res.partner",
+        relation="liana_mailing_list_res_partner_rel",
+        column1="list_id",
+        column2="partner_id",
+        string="Recipients",
+        help="Contacts exported to the corresponding Liana Mailer list.",
+    )
+    partner_domain = fields.Char(
+        string="Recipient Domain",
+        default="[]",
+        help="Contacts matching this domain are exported to the corresponding "
+             "Liana Mailer list.",
+    )
+    partner_count = fields.Integer(
+        string="Recipients Count",
+        compute="_compute_partner_count",
+    )
     liana_backend_id = fields.Many2one(
         comodel_name="liana.backend",
         string="Liana Backend",
@@ -37,8 +72,51 @@ class MailingList(models.Model):
         help="Date of the last export",
     )
 
+    @api.depends("recipient_mode", "partner_ids", "partner_domain")
+    def _compute_partner_count(self):
+        for mailing_list in self:
+            if mailing_list.recipient_mode == "domain":
+                mailing_list.partner_count = self.env["res.partner"].search_count(
+                    mailing_list._get_partner_domain()
+                )
+            else:
+                mailing_list.partner_count = len(mailing_list.partner_ids)
+
+    @api.constrains("recipient_mode", "partner_domain")
+    def _check_partner_domain(self):
+        for mailing_list in self.filtered(lambda ml: ml.recipient_mode == "domain"):
+            try:
+                domain = Domain(literal_eval(mailing_list.partner_domain or "[]"))
+                domain.validate(self.env["res.partner"])
+            except (SyntaxError, TypeError, ValueError) as err:
+                raise ValidationError(_(
+                    "The recipient domain of mailing list %(list_name)s is not a "
+                    "valid domain on contacts: %(error)s",
+                    list_name=mailing_list.name,
+                    error=err,
+                )) from err
+
+    def _get_partner_domain(self):
+        """Return ``partner_domain`` as a domain, matching nothing if unparsable."""
+        self.ensure_one()
+        try:
+            return Domain(literal_eval(self.partner_domain or "[]"))
+        except (SyntaxError, TypeError, ValueError):
+            _logger.warning(
+                "Invalid recipient domain on Liana mailing list %s (id=%s): %r",
+                self.name, self.id, self.partner_domain,
+            )
+            return Domain.FALSE
+
+    def _get_recipients(self):
+        """Return the contacts of this list according to its recipient mode."""
+        self.ensure_one()
+        if self.recipient_mode == "domain":
+            return self.env["res.partner"].search(self._get_partner_domain())
+        return self.partner_ids
+
     def _cron_export_all_to_liana(self):
-        """Export every mailing list to Liana Mailer (scheduled action)."""
+        """Export every Liana mailing list to Liana Mailer (scheduled action)."""
         for mailing_list in self.search([]):
             try:
                 mailing_list.action_export_to_liana()
@@ -58,7 +136,7 @@ class MailingList(models.Model):
         return backend.sudo()
 
     def action_export_to_liana(self):
-        """Export this mailing list and its contacts to Liana Mailer."""
+        """Export this mailing list and its recipients to Liana Mailer."""
         self.ensure_one()
         backend = self._liana_get_backend()
         backend._check_mailer_settings()
@@ -67,9 +145,9 @@ class MailingList(models.Model):
             list_id = self._liana_ensure_list(backend)
 
             recipients = [
-                backend._build_recipient_values(contact)
-                for contact in self.contact_ids
-                if contact.email
+                backend._build_recipient_values(partner)
+                for partner in self._get_recipients()
+                if partner.email
             ]
 
             if self.liana_truncate:

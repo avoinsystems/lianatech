@@ -4,7 +4,7 @@
 
         <record id="ir_cron_export_mailing_lists_to_liana" model="ir.cron">
             <field name="name">Liana: Export Mailing Lists</field>
-            <field name="model_id" ref="mass_mailing.model_mailing_list"/>
+            <field name="model_id" ref="connector_liana.model_liana_mailing_list"/>
             <field name="state">code</field>
             <field name="code">model._cron_export_all_to_liana()</field>
             <field name="interval_number">1</field>

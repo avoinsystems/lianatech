@@ -384,23 +384,23 @@ class LianaBackend(models.Model):
             },
         }
 
-    def _build_recipient_values(self, contact):
-        """Build the LianaMailer recipient dict for a ``mailing.contact``.
+    def _build_recipient_values(self, partner):
+        """Build the LianaMailer recipient dict for a ``res.partner``.
 
-        ``email`` is always taken from the contact; the configured field
+        ``email`` is always taken from the partner; the configured field
         mappings add custom property values keyed by their Liana property name.
         Reserved property names are skipped defensively.
         """
         self.ensure_one()
-        values = {"email": contact.email}
+        values = {"email": partner.email}
         for mapping in self.mapping_ids:
             property_name = mapping.liana_property_id.name
-            field_name = mapping.contact_field_id.name
+            field_name = mapping.partner_field_id.name
             if not property_name or not field_name:
                 continue
             if property_name in MAILER_RESERVED_PROPERTY_NAMES:
                 continue
-            raw = contact[field_name]
+            raw = partner[field_name]
             if raw is False or raw is None:
                 raw = ""
             elif not isinstance(raw, (str, int, float)):

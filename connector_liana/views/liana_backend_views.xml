@@ -74,8 +74,8 @@
                                 </div>
                                 <field name="mapping_ids">
                                     <list editable="bottom">
-                                        <field name="contact_field_id"
-                                               domain="[('model', '=', 'mailing.contact')]"/>
+                                        <field name="partner_field_id"
+                                               domain="[('model', '=', 'res.partner')]"/>
                                         <field name="liana_property_id"
                                                domain="[('backend_id', '=', parent.id)]"/>
                                     </list>
