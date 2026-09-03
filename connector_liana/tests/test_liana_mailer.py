@@ -1,4 +1,6 @@
-import json
+import base64
+import csv
+import io
 from unittest.mock import patch
 
 from odoo.exceptions import UserError, ValidationError
@@ -6,6 +8,8 @@ from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
 from odoo.addons.connector_liana.models import liana_backend as liana_backend_module
+
+IMPORT_PATH = liana_backend_module.MAILER_API_IMPORT_LIST_PATH
 
 
 class LianaMailerCommon(TransactionCase):
@@ -49,8 +53,11 @@ class LianaMailerCommon(TransactionCase):
         def _side_effect(path, params):
             if path in responses:
                 return responses[path]
-            if path == "v1/createMailingList":
-                return {"result": create_result}
+            if path == IMPORT_PATH:
+                return {
+                    "succeed": True,
+                    "result": {"succeed": True, "list_id": create_result},
+                }
             return {"succeed": True}
 
         return _side_effect
@@ -62,6 +69,24 @@ class LianaMailerCommon(TransactionCase):
             side_effect=self._make_side_effect(**kwargs),
             autospec=False,
         )
+
+    def _import_params(self, mock_req):
+        """Return the payload of the last import call."""
+        return mock_req.call_args_list[-1].args[1]
+
+    def _imported_csv(self, mock_req):
+        """Return the decoded CSV text sent by the last import call."""
+        data = self._import_params(mock_req)["data"]
+        return base64.b64decode(data).decode("utf-8")
+
+    def _imported_recipients(self, mock_req):
+        """Return the recipients of the last import call as dicts."""
+        reader = csv.DictReader(
+            io.StringIO(self._imported_csv(mock_req)),
+            delimiter=";",
+            quotechar='"',
+        )
+        return list(reader)
 
 
 @tagged("post_install", "-at_install")
@@ -75,14 +100,16 @@ class TestLianaMailerExport(LianaMailerCommon):
         self.assertTrue(self.mailing_list.date_liana_export)
 
         paths = [call.args[0] for call in mock_req.call_args_list]
-        self.assertEqual(paths, ["v1/createMailingList", "v1/importJSONToMailingList"])
+        self.assertEqual(paths, [IMPORT_PATH])
 
-        create_params = mock_req.call_args_list[0].args[1]
-        self.assertEqual(create_params, ["Newsletter", "Newsletter"])
+        params = self._import_params(mock_req)
+        self.assertEqual(params["name"], "Newsletter")
+        self.assertEqual(params["type"], "csv")
+        self.assertFalse(params["truncate"])
+        # No list id yet, so the endpoint creates the list from the name.
+        self.assertNotIn("list_id", params)
 
-        import_params = mock_req.call_args_list[1].args[1]
-        self.assertEqual(import_params[0], 77)
-        recipients = json.loads(import_params[1])
+        recipients = self._imported_recipients(mock_req)
         self.assertEqual(
             sorted(r["email"] for r in recipients),
             ["alice@example.test", "bob@example.test"],
@@ -98,20 +125,15 @@ class TestLianaMailerExport(LianaMailerCommon):
             self.mailing_list.action_export_to_liana()
 
         paths = [call.args[0] for call in mock_req.call_args_list]
-        self.assertEqual(paths, ["v1/importJSONToMailingList"])
-        self.assertEqual(mock_req.call_args_list[0].args[1][0], 500)
-        self.assertEqual(self.mailing_list.liana_list_id, 500)
+        self.assertEqual(paths, [IMPORT_PATH])
+        self.assertEqual(self._import_params(mock_req)["list_id"], 500)
 
     def test_export_truncates_when_enabled(self):
         self.mailing_list.write({"liana_list_id": 12, "liana_truncate": True})
         with self._patch_mailer() as mock_req:
             self.mailing_list.action_export_to_liana()
 
-        paths = [call.args[0] for call in mock_req.call_args_list]
-        self.assertEqual(
-            paths, ["v1/truncateMailingList", "v1/importJSONToMailingList"]
-        )
-        self.assertEqual(mock_req.call_args_list[0].args[1], [12])
+        self.assertTrue(self._import_params(mock_req)["truncate"])
 
     def test_export_skips_contacts_without_email(self):
         no_email = self.env["res.partner"].create({"name": "No Email"})
@@ -119,31 +141,40 @@ class TestLianaMailerExport(LianaMailerCommon):
         with self._patch_mailer() as mock_req:
             self.mailing_list.action_export_to_liana()
 
-        import_params = mock_req.call_args_list[-1].args[1]
-        recipients = json.loads(import_params[1])
-        self.assertEqual(len(recipients), 2)
+        self.assertEqual(len(self._imported_recipients(mock_req)), 2)
 
     def test_export_includes_mapped_properties(self):
-        prop = self.env["liana.property"].create({
-            "name": "company",
-            "handle": "company",
-            "backend_id": self.backend.id,
-        })
-        function_field = self.env["ir.model.fields"]._get("res.partner", "function")
-        self.env["liana.field.mapping"].create({
-            "backend_id": self.backend.id,
-            "partner_field_id": function_field.id,
-            "liana_property_id": prop.id,
-        })
+        self._add_company_mapping()
 
         with self._patch_mailer() as mock_req:
             self.mailing_list.action_export_to_liana()
 
-        import_params = mock_req.call_args_list[-1].args[1]
-        recipients = json.loads(import_params[1])
+        recipients = self._imported_recipients(mock_req)
         by_email = {r["email"]: r for r in recipients}
         self.assertEqual(by_email["alice@example.test"]["company"], "ACME")
         self.assertEqual(by_email["bob@example.test"]["company"], "Globex")
+
+    def test_export_csv_header_follows_mappings(self):
+        self._add_company_mapping()
+
+        with self._patch_mailer() as mock_req:
+            self.mailing_list.action_export_to_liana()
+
+        header = self._imported_csv(mock_req).splitlines()[0]
+        self.assertEqual(header, '"email";"company"')
+
+    def test_export_csv_quotes_separators_and_quotes(self):
+        self._add_company_mapping()
+        self.partners[0].function = 'ACME; "the best"'
+
+        with self._patch_mailer() as mock_req:
+            self.mailing_list.action_export_to_liana()
+
+        recipients = self._imported_recipients(mock_req)
+        by_email = {r["email"]: r for r in recipients}
+        self.assertEqual(
+            by_email["alice@example.test"]["company"], 'ACME; "the best"'
+        )
 
     def test_export_missing_mailer_settings(self):
         self.mailing_list.liana_backend_id = self.env["liana.backend"].create({
@@ -169,23 +200,20 @@ class TestLianaMailerExport(LianaMailerCommon):
             self.mailing_list.action_export_to_liana()
         self.assertEqual(self.mailing_list.liana_list_id, 9)
 
-    def test_export_create_list_unexpected_response(self):
-        responses = {"v1/createMailingList": {"succeed": True}}
+    def test_export_response_without_list_id(self):
+        responses = {IMPORT_PATH: {"succeed": True, "result": {"succeed": True}}}
         with self._patch_mailer(responses=responses):
             with self.assertRaises(UserError) as cm:
                 self.mailing_list.action_export_to_liana()
-        self.assertIn("createMailingList", str(cm.exception))
+        self.assertIn(IMPORT_PATH, str(cm.exception))
         self.assertFalse(self.mailing_list.liana_list_id)
         self.assertFalse(self.mailing_list.date_liana_export)
 
     def test_export_import_failure_raises(self):
         responses = {
-            "v1/importJSONToMailingList": {
-                "succeed": False,
-                "message": "quota exceeded",
-            },
+            IMPORT_PATH: {"succeed": False, "message": "quota exceeded"},
         }
-        with self._patch_mailer(create_result=3, responses=responses):
+        with self._patch_mailer(responses=responses):
             with self.assertRaises(UserError) as cm:
                 self.mailing_list.action_export_to_liana()
         self.assertIn("quota exceeded", str(cm.exception))
@@ -219,6 +247,61 @@ class TestLianaMailerExport(LianaMailerCommon):
 
     def test_partner_count(self):
         self.assertEqual(self.mailing_list.partner_count, 2)
+
+    def _add_company_mapping(self):
+        prop = self.env["liana.property"].create({
+            "name": "company",
+            "handle": "company",
+            "backend_id": self.backend.id,
+        })
+        function_field = self.env["ir.model.fields"]._get("res.partner", "function")
+        return self.env["liana.field.mapping"].create({
+            "backend_id": self.backend.id,
+            "partner_field_id": function_field.id,
+            "liana_property_id": prop.id,
+        })
+
+
+@tagged("post_install", "-at_install")
+class TestLianaMailingListFolder(LianaMailerCommon):
+
+    def test_backend_folder_used_as_default(self):
+        self.backend.mailing_list_folder = "Odoo/Newsletters"
+        with self._patch_mailer() as mock_req:
+            self.mailing_list.action_export_to_liana()
+
+        self.assertEqual(
+            self._import_params(mock_req)["folder"], "Odoo/Newsletters"
+        )
+
+    def test_list_folder_overrides_backend_folder(self):
+        self.backend.mailing_list_folder = "Odoo/Newsletters"
+        self.mailing_list.liana_folder = "Odoo/Campaigns"
+        with self._patch_mailer() as mock_req:
+            self.mailing_list.action_export_to_liana()
+
+        self.assertEqual(
+            self._import_params(mock_req)["folder"], "Odoo/Campaigns"
+        )
+
+    def test_folder_sent_with_list_id_to_move_existing_list(self):
+        self.mailing_list.write({
+            "liana_list_id": 31,
+            "liana_folder": "Odoo/Moved",
+        })
+        with self._patch_mailer() as mock_req:
+            self.mailing_list.action_export_to_liana()
+
+        params = self._import_params(mock_req)
+        self.assertEqual(params["list_id"], 31)
+        self.assertEqual(params["folder"], "Odoo/Moved")
+
+    def test_root_folder_is_sent(self):
+        self.mailing_list.liana_folder = "/"
+        with self._patch_mailer() as mock_req:
+            self.mailing_list.action_export_to_liana()
+
+        self.assertEqual(self._import_params(mock_req)["folder"], "/")
 
 
 @tagged("post_install", "-at_install")
@@ -257,8 +340,7 @@ class TestLianaMailingListRecipientMode(LianaMailerCommon):
         with self._patch_mailer(create_result=21) as mock_req:
             self.domain_list.action_export_to_liana()
 
-        import_params = mock_req.call_args_list[-1].args[1]
-        recipients = json.loads(import_params[1])
+        recipients = self._imported_recipients(mock_req)
         self.assertEqual(
             sorted(r["email"] for r in recipients),
             ["carol@example.test", "dave@example.test"],
@@ -269,8 +351,7 @@ class TestLianaMailingListRecipientMode(LianaMailerCommon):
         with self._patch_mailer(create_result=22) as mock_req:
             self.domain_list.action_export_to_liana()
 
-        import_params = mock_req.call_args_list[-1].args[1]
-        recipients = json.loads(import_params[1])
+        recipients = self._imported_recipients(mock_req)
         self.assertEqual(
             sorted(r["email"] for r in recipients),
             ["carol@example.test", "dave@example.test"],
@@ -281,8 +362,7 @@ class TestLianaMailingListRecipientMode(LianaMailerCommon):
         with self._patch_mailer(create_result=23) as mock_req:
             self.mailing_list.action_export_to_liana()
 
-        import_params = mock_req.call_args_list[-1].args[1]
-        recipients = json.loads(import_params[1])
+        recipients = self._imported_recipients(mock_req)
         self.assertEqual(
             sorted(r["email"] for r in recipients),
             ["alice@example.test", "bob@example.test"],
@@ -293,9 +373,7 @@ class TestLianaMailingListRecipientMode(LianaMailerCommon):
         with self._patch_mailer(create_result=24) as mock_req:
             self.domain_list.action_export_to_liana()
 
-        import_params = mock_req.call_args_list[-1].args[1]
-        recipients = json.loads(import_params[1])
-        self.assertEqual(len(recipients), 2)
+        self.assertEqual(len(self._imported_recipients(mock_req)), 2)
 
     def test_empty_domain_matches_all_contacts(self):
         self.domain_list.partner_domain = "[]"

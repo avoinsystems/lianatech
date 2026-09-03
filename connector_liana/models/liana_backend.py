@@ -21,6 +21,10 @@ AUTOMATION_API_EVENT_PATH = "v1/import"
 AUTOMATION_API_CHANNEL_LIST_PATH = "v1/channel/list"
 # POST body: empty array. Returns the account's customer properties (field catalog).
 MAILER_API_PROPERTIES_PATH = "v1/getCustomerProperties"
+# POST body: keyed object with the list name/id, base64 CSV payload and folder.
+# This is the only endpoint accepting a folder, both when creating a list and
+# when moving an existing one.
+MAILER_API_IMPORT_LIST_PATH = "v2/import/mailinglist"
 
 # Property handles reserved by LianaMailer; they must not be sent as custom
 # properties in import payloads (see the API "Restrictions" documentation).
@@ -85,6 +89,13 @@ class LianaBackend(models.Model):
 
     liana_mailer_realm = fields.Char(
         string="Mailer Realm",
+    )
+
+    mailing_list_folder = fields.Char(
+        string="Mailing List Folder",
+        help="Default Liana Mailer folder path for lists exported through this "
+             "backend. Multi-level paths are supported and created on demand.",
+        default="Odoo",
     )
 
     property_ids = fields.One2many(
@@ -171,9 +182,9 @@ class LianaBackend(models.Model):
     def mailer_send_api_request(self, path, params):
         """Send an authenticated request to the LianaMailer REST API.
 
-        ``params`` must be a list (V1 endpoints identify parameters positionally,
-        so the request body is a JSON array). Pass an empty list for endpoints
-        that take no parameters.
+        V1 endpoints identify parameters positionally, so ``params`` is a list
+        there (empty for endpoints taking no parameters). V2 endpoints identify
+        them by key, so ``params`` is a dict.
         """
         return self._send_signed_request(
             MAILER_BASE_PATH,

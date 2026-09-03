@@ -1,4 +1,6 @@
-import json
+import base64
+import csv
+import io
 import logging
 from ast import literal_eval
 
@@ -6,7 +8,7 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.fields import Domain
 
-from .liana_backend import LianaError
+from .liana_backend import MAILER_API_IMPORT_LIST_PATH, LianaError
 
 _logger = logging.getLogger(__name__)
 
@@ -59,6 +61,12 @@ class LianaMailingList(models.Model):
         copy=False,
         help="Identifier of the corresponding mailing list in Liana Mailer. "
              "Set automatically on the first export.",
+    )
+    liana_folder = fields.Char(
+        string="Liana Folder",
+        help="Folder path in Liana Mailer, overriding the backend default. "
+             "The list is moved on the next export when this changes. "
+             "Use / for the root folder.",
     )
     liana_truncate = fields.Boolean(
         string="Truncate on Export",
@@ -135,6 +143,39 @@ class LianaMailingList(models.Model):
         # rights so marketing managers can trigger it.
         return backend.sudo()
 
+    def _liana_get_folder(self, backend):
+        """Return the Liana folder path for this list, falling back to the backend."""
+        self.ensure_one()
+        return self.liana_folder or backend.mailing_list_folder or ""
+
+    def _liana_build_csv(self, recipients, backend):
+        """Serialise recipient dicts as the CSV dialect expected by Liana Mailer.
+
+        Columns are fixed by the backend field mappings rather than derived
+        from the recipients, so the header stays stable across exports even
+        when a property is empty for every contact of a given export.
+        """
+        columns = ["email"]
+        for mapping in backend.mapping_ids:
+            property_name = mapping.liana_property_id.name
+            if property_name and property_name not in columns:
+                columns.append(property_name)
+
+        buffer = io.StringIO()
+        writer = csv.DictWriter(
+            buffer,
+            fieldnames=columns,
+            delimiter=";",
+            quotechar='"',
+            quoting=csv.QUOTE_ALL,
+            lineterminator="\n",
+            extrasaction="ignore",
+            restval="",
+        )
+        writer.writeheader()
+        writer.writerows(recipients)
+        return buffer.getvalue()
+
     def action_export_to_liana(self):
         """Export this mailing list and its recipients to Liana Mailer."""
         self.ensure_one()
@@ -142,24 +183,37 @@ class LianaMailingList(models.Model):
         backend._check_mailer_settings()
 
         try:
-            list_id = self._liana_ensure_list(backend)
-
             recipients = [
                 backend._build_recipient_values(partner)
                 for partner in self._get_recipients()
                 if partner.email
             ]
+            data = self._liana_build_csv(recipients, backend)
 
-            if self.liana_truncate:
-                self._liana_call(
-                    backend, "v1/truncateMailingList", [list_id],
-                )
+            params = {
+                "name": self.name,
+                "type": "csv",
+                "data": base64.b64encode(data.encode("utf-8")).decode("ascii"),
+                "truncate": self.liana_truncate,
+            }
+            if self.liana_list_id:
+                params["list_id"] = self.liana_list_id
+            folder = self._liana_get_folder(backend)
+            if folder:
+                params["folder"] = folder
 
-            self._liana_call(
-                backend,
-                "v1/importJSONToMailingList",
-                [list_id, json.dumps(recipients)],
+            response = self._liana_call(
+                backend, MAILER_API_IMPORT_LIST_PATH, params,
             )
+            # The import endpoint nests its own status alongside the list id.
+            result = response.get("result") if isinstance(response, dict) else None
+            list_id = result.get("list_id") if isinstance(result, dict) else None
+            if not list_id or result.get("succeed") is False:
+                raise LianaError(
+                    f"Unexpected response from Liana Mailer "
+                    f"{MAILER_API_IMPORT_LIST_PATH}: {response!r}"
+                )
+            self.liana_list_id = int(list_id)
             self.date_liana_export = fields.Datetime.now()
         except LianaError as err:
             raise UserError(str(err)) from err
@@ -175,23 +229,6 @@ class LianaMailingList(models.Model):
                 "next": {"type": "ir.actions.client", "tag": "reload"},
             },
         }
-
-    def _liana_ensure_list(self, backend):
-        """Return the Liana list id, creating the remote list on first export."""
-        self.ensure_one()
-        if self.liana_list_id:
-            return self.liana_list_id
-
-        response = backend.mailer_send_api_request(
-            "v1/createMailingList", [self.name, self.name or ""],
-        )
-        list_id = response.get("result") if isinstance(response, dict) else None
-        if not list_id:
-            raise LianaError(
-                f"Unexpected response from Liana Mailer createMailingList: {response!r}"
-            )
-        self.liana_list_id = int(list_id)
-        return self.liana_list_id
 
     def _liana_call(self, backend, path, params):
         """Call a Mailer endpoint and validate the ``succeed``/``result`` envelope."""

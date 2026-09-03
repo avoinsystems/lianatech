@@ -57,6 +57,8 @@
                             <field name="liana_mailer_realm"/>
                             <field name="liana_mailer_user"/>
                             <field name="liana_mailer_secret" password="True"/>
+                            <field name="mailing_list_folder"
+                                   placeholder="e.g. Odoo/Newsletters"/>
                             <button
                                     name="test_mailer_connection"
                                     type="object"
