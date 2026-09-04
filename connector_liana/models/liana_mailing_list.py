@@ -183,10 +183,13 @@ class LianaMailingList(models.Model):
         backend._check_mailer_settings()
 
         try:
+            partners = self._get_recipients().filtered("email")
+            if backend._get_extra1_property():
+                # The Liana ID is exported as a property, so it must exist
+                # before the recipient values are built.
+                partners._liana_ensure_extra1()
             recipients = [
-                backend._build_recipient_values(partner)
-                for partner in self._get_recipients()
-                if partner.email
+                backend._build_recipient_values(partner) for partner in partners
             ]
             data = self._liana_build_csv(recipients, backend)
 

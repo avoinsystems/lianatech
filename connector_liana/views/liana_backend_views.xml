@@ -59,11 +59,20 @@
                             <field name="liana_mailer_secret" password="True"/>
                             <field name="mailing_list_folder"
                                    placeholder="e.g. Odoo/Newsletters"/>
+                            <field name="mailer_extra1_property_id"/>
+                            <field name="mailer_event_fetch_date"/>
                             <button
                                     name="test_mailer_connection"
                                     type="object"
                                     string="Test Mailer Connection"
                                     class="oe_highlight"
+                            />
+                            <button
+                                    name="action_fetch_mailer_events"
+                                    type="object"
+                                    string="Fetch Mailer Events"
+                                    icon="fa-download"
+                                    class="btn-link"
                             />
                         <notebook colspan="2">
                             <page string="Field Mappings" name="field_mappings">

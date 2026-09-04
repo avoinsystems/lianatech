@@ -8,5 +8,6 @@ from . import ir_actions_server
 from . import base_automation
 from . import liana_event
 from . import liana_event_report
+from . import liana_mailer_event
 from . import res_partner
 from . import crm_lead

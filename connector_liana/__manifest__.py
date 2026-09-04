@@ -1,6 +1,6 @@
 {
     "name": "Liana Connector",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.1.0",
     "category": "Marketing",
     "author": "Liana Technologies",
     "license": "Other proprietary",
@@ -22,6 +22,7 @@
         "views/liana_dashboard_views.xml",
         "views/crm_lead_views.xml",
         "views/res_partner_views.xml",
+        "views/liana_mailer_event_views.xml",
         "views/liana_mailing_list_views.xml",
         "wizard/liana_mailing_list_add_views.xml",
         "views/menus.xml",

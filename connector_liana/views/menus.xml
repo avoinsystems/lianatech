@@ -28,6 +28,16 @@
         groups="connector_liana.group_liana_mailing"
     />
 
+    <!-- Menu item for Liana Mailer Events -->
+    <menuitem
+        id="liana_menu_mailer_events"
+        name="Mailer Events"
+        parent="liana_menu_root"
+        action="action_liana_mailer_event"
+        sequence="15"
+        groups="connector_liana.group_liana_mailing"
+    />
+
     <!-- Configuration Menu (admin-only) -->
     <menuitem
         id="liana_menu_configuration"

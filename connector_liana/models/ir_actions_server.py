@@ -263,8 +263,7 @@ class IrActionsServer(models.Model):
             identity["email"] = email
         if sms:
             identity["sms"] = sms
-        if not identity_record.liana_extra1:
-            identity_record.liana_extra1 = self.env["ir.sequence"].next_by_code("liana.extra1")
+        identity_record._liana_ensure_extra1()
         if self.liana_send_extra1:
             identity["extra1"] = identity_record.liana_extra1
         return identity

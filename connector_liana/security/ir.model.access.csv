@@ -11,3 +11,6 @@ liana_mailing_list_add_rule_mailing,Liana Mailing List Wizard Access,model_liana
 liana_backend_rule_mailing,Liana Backend Read,model_liana_backend,connector_liana.group_liana_mailing,1,0,0,0
 liana_event_report_rule_user,Liana Event Report Read,model_liana_event_report,base.group_user,1,0,0,0
 liana_event_report_rule_manager,Liana Event Report Manager,model_liana_event_report,base.group_system,1,0,0,0
+liana_mailer_event_rule_user,Liana Mailer Event Read,model_liana_mailer_event,base.group_user,1,0,0,0
+liana_mailer_event_rule_mailing,Liana Mailer Event Access,model_liana_mailer_event,connector_liana.group_liana_mailing,1,1,0,0
+liana_mailer_event_rule_manager,Liana Mailer Event Manager Access,model_liana_mailer_event,base.group_system,1,1,1,1
