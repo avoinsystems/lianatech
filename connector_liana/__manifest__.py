@@ -11,6 +11,7 @@
         "sale",
     ],
     "data": [
+        "security/liana_groups.xml",
         "security/ir.model.access.csv",
         "data/ir_sequence_data.xml",
         "data/ir_cron_data.xml",
@@ -22,6 +23,7 @@
         "views/crm_lead_views.xml",
         "views/res_partner_views.xml",
         "views/liana_mailing_list_views.xml",
+        "wizard/liana_mailing_list_add_views.xml",
         "views/menus.xml",
         "data/default_automations.xml",
     ],

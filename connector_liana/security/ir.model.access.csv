@@ -6,5 +6,8 @@ liana_property_rule_manager,Liana Property Manager Access,model_liana_property,b
 liana_field_mapping_rule_manager,Liana Field Mapping Manager Access,model_liana_field_mapping,base.group_system,1,1,1,1
 liana_event_item_rule_manager,Liana Event Item Manager Access,model_liana_event_item,base.group_system,1,1,1,1
 liana_mailing_list_rule_manager,Liana Mailing List Manager Access,model_liana_mailing_list,base.group_system,1,1,1,1
+liana_mailing_list_rule_mailing,Liana Mailing List Access,model_liana_mailing_list,connector_liana.group_liana_mailing,1,1,1,1
+liana_mailing_list_add_rule_mailing,Liana Mailing List Wizard Access,model_liana_mailing_list_add,connector_liana.group_liana_mailing,1,1,1,1
+liana_backend_rule_mailing,Liana Backend Read,model_liana_backend,connector_liana.group_liana_mailing,1,0,0,0
 liana_event_report_rule_user,Liana Event Report Read,model_liana_event_report,base.group_user,1,0,0,0
 liana_event_report_rule_manager,Liana Event Report Manager,model_liana_event_report,base.group_system,1,0,0,0

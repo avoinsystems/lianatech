@@ -18,6 +18,16 @@
         sequence="1"
     />
 
+    <!-- Menu item for Liana Mailing Lists -->
+    <menuitem
+        id="liana_menu_mailing_lists"
+        name="Mailing Lists"
+        parent="liana_menu_root"
+        action="action_liana_mailing_list"
+        sequence="10"
+        groups="connector_liana.group_liana_mailing"
+    />
+
     <!-- Configuration Menu (admin-only) -->
     <menuitem
         id="liana_menu_configuration"
@@ -31,7 +41,7 @@
     <menuitem
         id="liana_menu_events"
         name="Events"
-        parent="liana_menu_configuration"
+        parent="liana_menu_root"
         action="action_liana_event"
         sequence="10"
         groups="base.group_system"
@@ -44,15 +54,6 @@
         parent="liana_menu_configuration"
         action="action_liana_automation"
         sequence="20"
-    />
-
-    <!-- Menu item for Liana Mailing Lists -->
-    <menuitem
-        id="liana_menu_mailing_lists"
-        name="Mailing Lists"
-        parent="liana_menu_configuration"
-        action="action_liana_mailing_list"
-        sequence="25"
     />
 
     <!-- Liana Backends Menu Item -->
