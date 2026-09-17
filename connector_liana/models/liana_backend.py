@@ -74,6 +74,25 @@ DEFAULT_AUTOMATION_ACTION_XMLIDS = (
     "connector_liana.ir_actions_server_sale_order_state_changed",
 )
 
+INTEGRATION_TYPE_AUTOMATION = "automation"
+INTEGRATION_TYPE_MAILER = "mailer"
+
+# Records owned by each integration type, as ``(model, field)`` pairs. A backend
+# cannot be retyped while any of them still points at it.
+INTEGRATION_TYPE_REFERENCES = {
+    INTEGRATION_TYPE_AUTOMATION: (
+        ("liana.channel", "backend_id"),
+        ("ir.actions.server", "liana_backend_id"),
+        ("liana.event", "backend_id"),
+    ),
+    INTEGRATION_TYPE_MAILER: (
+        ("liana.property", "backend_id"),
+        ("liana.field.mapping", "backend_id"),
+        ("liana.mailing.list", "liana_backend_id"),
+        ("liana.mailer.event", "backend_id"),
+    ),
+}
+
 
 class LianaError(Exception):
     pass
@@ -84,6 +103,18 @@ class LianaBackend(models.Model):
     _description = "Liana Integration Backend Configuration"
 
     name = fields.Char(required=True)
+
+    integration_type = fields.Selection(
+        selection=[
+            (INTEGRATION_TYPE_AUTOMATION, "Liana Automation"),
+            (INTEGRATION_TYPE_MAILER, "Liana Mailer"),
+        ],
+        string="Integration",
+        required=True,
+        default=INTEGRATION_TYPE_AUTOMATION,
+        help="Integration this backend connects to. A backend serves one "
+             "integration; configure a second backend for the other one.",
+    )
 
     liana_automation_address = fields.Char(
         string="Automation Address",
@@ -271,6 +302,11 @@ class LianaBackend(models.Model):
         )
 
     def _check_automation_settings(self):
+        if self.integration_type != INTEGRATION_TYPE_AUTOMATION:
+            raise UserError(_(
+                "Backend %s is a Liana Mailer backend and cannot be used for "
+                "Liana Automation.", self.display_name,
+            ))
         if any((
             not self.liana_automation_address,
             not self.liana_automation_secret,
@@ -281,7 +317,7 @@ class LianaBackend(models.Model):
 
     def _has_mailer_settings(self):
         self.ensure_one()
-        return all((
+        return self.integration_type == INTEGRATION_TYPE_MAILER and all((
             self.liana_mailer_address,
             self.liana_mailer_secret,
             self.liana_mailer_user,
@@ -289,6 +325,11 @@ class LianaBackend(models.Model):
         ))
 
     def _check_mailer_settings(self):
+        if self.integration_type != INTEGRATION_TYPE_MAILER:
+            raise UserError(_(
+                "Backend %s is a Liana Automation backend and cannot be used "
+                "for Liana Mailer.", self.display_name,
+            ))
         if not self._has_mailer_settings():
             raise UserError(_("Please fill in all Liana Mailer settings first."))
 
@@ -613,12 +654,37 @@ class LianaBackend(models.Model):
         return values
 
     @api.model
-    def _get_default_backend(self):
-        """Return the unique backend in the database, or empty recordset.
+    def _get_default_backend(self, integration_type=None):
+        """Return the unique backend of ``integration_type``, or empty recordset.
 
         Used as the implicit fallback when a Liana action does not pin a
-        specific backend and exactly one is configured.
+        specific backend and exactly one is configured for the integration.
         """
-        backends = self.sudo().search([], limit=2)
+        domain = [("integration_type", "=", integration_type)] if integration_type else []
+        backends = self.sudo().search(domain, limit=2)
         return backends if len(backends) == 1 else self.browse()
+
+    def write(self, vals):
+        new_type = vals.get("integration_type")
+        if new_type:
+            for backend in self:
+                if backend.integration_type != new_type:
+                    backend._check_retype_allowed()
+        return super().write(vals)
+
+    def _check_retype_allowed(self):
+        """Refuse to change the integration type while it is still in use."""
+        self.ensure_one()
+        used_by = []
+        for model_name, field_name in INTEGRATION_TYPE_REFERENCES[self.integration_type]:
+            count = self.env[model_name].sudo().search_count([(field_name, "=", self.id)])
+            if count:
+                used_by.append("%s (%s)" % (self.env[model_name]._description, count))
+        if used_by:
+            raise UserError(_(
+                "Backend %(backend)s cannot change integration because it is "
+                "still used by: %(records)s.",
+                backend=self.display_name,
+                records=", ".join(used_by),
+            ))
 

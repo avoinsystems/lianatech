@@ -9,6 +9,7 @@ from dateutil import parser as dateutil_parser
 from odoo import _, api, fields, models
 
 from .liana_backend import (
+    INTEGRATION_TYPE_MAILER,
     MAILER_EVENT_TIMEZONE,
     MAILER_EVENT_TYPE_CLICK,
     MAILER_EVENT_TYPE_OPEN,
@@ -46,6 +47,7 @@ class LianaMailerEvent(models.Model):
         required=True,
         ondelete="cascade",
         index=True,
+        domain=[("integration_type", "=", INTEGRATION_TYPE_MAILER)],
     )
     event_type = fields.Selection(
         selection=MAILER_EVENT_TYPES,
@@ -325,8 +327,10 @@ class LianaMailerEvent(models.Model):
 
     @api.model
     def _cron_fetch_mailer_events(self):
-        """Import Liana Mailer events for every configured backend."""
-        backends = self.env["liana.backend"].search([])
+        """Import Liana Mailer events for every configured Mailer backend."""
+        backends = self.env["liana.backend"].search([
+            ("integration_type", "=", INTEGRATION_TYPE_MAILER),
+        ])
         for backend in backends.filtered(lambda b: b._has_mailer_settings()):
             try:
                 backend.fetch_mailer_events()

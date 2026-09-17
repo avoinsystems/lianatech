@@ -2,6 +2,8 @@ import logging
 
 from odoo import api, fields, models
 
+from .liana_backend import INTEGRATION_TYPE_AUTOMATION
+
 _logger = logging.getLogger(__name__)
 
 
@@ -27,6 +29,7 @@ class LianaChannel(models.Model):
         comodel_name="liana.backend",
         required=True,
         ondelete="cascade",
+        domain=[("integration_type", "=", INTEGRATION_TYPE_AUTOMATION)],
     )
 
     _sql_constraints = [

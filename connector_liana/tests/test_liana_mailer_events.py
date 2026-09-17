@@ -28,6 +28,7 @@ class LianaMailerEventCommon(TransactionCase):
         super().setUpClass()
         cls.backend = cls.env["liana.backend"].create({
             "name": "Mailer backend",
+            "integration_type": "mailer",
             "liana_mailer_address": "https://rest.example.test",
             "liana_mailer_secret": "mailer-secret",
             "liana_mailer_user": "mailer-user",
@@ -169,7 +170,10 @@ class TestLianaMailerEventRequest(LianaMailerEventCommon):
         self.assertIn(MAILER_API_EVENTS_PATH, str(cm.exception))
 
     def test_fetch_requires_mailer_settings(self):
-        backend = self.env["liana.backend"].create({"name": "Incomplete"})
+        backend = self.env["liana.backend"].create({
+            "name": "Incomplete",
+            "integration_type": "mailer",
+        })
         with self.assertRaises(UserError) as cm:
             backend.fetch_mailer_events()
         self.assertIn("Liana Mailer settings", str(cm.exception))
@@ -362,7 +366,10 @@ class TestLianaMailerEventImport(LianaMailerEventCommon):
                 self.backend.action_fetch_mailer_events()
 
     def test_cron_skips_backends_without_mailer_settings(self):
-        incomplete = self.env["liana.backend"].create({"name": "No mailer creds"})
+        incomplete = self.env["liana.backend"].create({
+            "name": "No mailer creds",
+            "integration_type": "mailer",
+        })
         with self._patch_events() as mock_get:
             self.events._cron_fetch_mailer_events()
 
@@ -373,6 +380,7 @@ class TestLianaMailerEventImport(LianaMailerEventCommon):
     def test_cron_continues_after_failing_backend(self):
         broken = self.env["liana.backend"].create({
             "name": "Broken backend",
+            "integration_type": "mailer",
             "liana_mailer_address": "https://rest.example.test",
             "liana_mailer_secret": "secret",
             "liana_mailer_user": "user",

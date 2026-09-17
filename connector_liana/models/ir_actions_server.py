@@ -5,6 +5,8 @@ import re
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
+from .liana_backend import INTEGRATION_TYPE_AUTOMATION
+
 _logger = logging.getLogger(__name__)
 
 IDENTITY_MODELS = ("res.partner", "crm.lead")
@@ -24,9 +26,12 @@ class IrActionsServer(models.Model):
         comodel_name="liana.backend",
         string="Liana Backend",
         ondelete="restrict",
-        default=lambda self: self.env["liana.backend"]._get_default_backend(),
+        domain=[("integration_type", "=", INTEGRATION_TYPE_AUTOMATION)],
+        default=lambda self: self.env["liana.backend"]._get_default_backend(
+            INTEGRATION_TYPE_AUTOMATION
+        ),
         help="Backend used to send the event. If left empty and exactly one "
-             "backend exists, that backend is used.",
+             "Liana Automation backend exists, that backend is used.",
     )
     liana_channel_id = fields.Many2one(
         comodel_name="liana.channel",
@@ -97,6 +102,20 @@ class IrActionsServer(models.Model):
                     rule=action.base_automation_id.display_name,
                 ))
 
+    @api.constrains("state", "liana_backend_id")
+    def _check_liana_backend_integration_type(self):
+        for action in self:
+            if (
+                action.state == "liana"
+                and action.liana_backend_id
+                and action.liana_backend_id.integration_type != INTEGRATION_TYPE_AUTOMATION
+            ):
+                raise ValidationError(_(
+                    "Backend %(backend)s is not a Liana Automation backend and "
+                    "cannot send automation events.",
+                    backend=action.liana_backend_id.display_name,
+                ))
+
     @api.constrains("state", "liana_backend_id", "liana_channel_id")
     def _check_liana_channel_backend(self):
         for action in self:
@@ -115,16 +134,18 @@ class IrActionsServer(models.Model):
     def _get_liana_backend(self):
         """Return the backend that should be used for this action.
 
-        Falls back to the unique backend in the database when the action
-        does not pin one explicitly. Raises :class:`UserError` when the
-        backend cannot be determined.
+        Falls back to the unique Liana Automation backend in the database when
+        the action does not pin one explicitly. Raises :class:`UserError` when
+        the backend cannot be determined.
         """
         self.ensure_one()
-        backend = self.liana_backend_id or self.env["liana.backend"]._get_default_backend()
+        backend = self.liana_backend_id or self.env["liana.backend"]._get_default_backend(
+            INTEGRATION_TYPE_AUTOMATION
+        )
         if not backend:
             raise UserError(_(
-                "No Liana backend configured. Set 'Liana Backend' on the "
-                "action or create a single backend record."
+                "No Liana Automation backend configured. Set 'Liana Backend' on "
+                "the action or create a single Liana Automation backend record."
             ))
         return backend.sudo()
 

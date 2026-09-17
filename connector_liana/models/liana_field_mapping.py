@@ -1,5 +1,7 @@
 from odoo import fields, models
 
+from .liana_backend import INTEGRATION_TYPE_MAILER
+
 
 class LianaFieldMapping(models.Model):
     _name = "liana.field.mapping"
@@ -11,6 +13,7 @@ class LianaFieldMapping(models.Model):
         required=True,
         ondelete="cascade",
         index=True,
+        domain=[("integration_type", "=", INTEGRATION_TYPE_MAILER)],
     )
     partner_field_id = fields.Many2one(
         comodel_name="ir.model.fields",

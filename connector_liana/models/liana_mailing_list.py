@@ -8,7 +8,11 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.fields import Domain
 
-from .liana_backend import MAILER_API_IMPORT_LIST_PATH, LianaError
+from .liana_backend import (
+    INTEGRATION_TYPE_MAILER,
+    MAILER_API_IMPORT_LIST_PATH,
+    LianaError,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -52,8 +56,11 @@ class LianaMailingList(models.Model):
     liana_backend_id = fields.Many2one(
         comodel_name="liana.backend",
         string="Liana Backend",
-        default=lambda self: self.env["liana.backend"]._get_default_backend(),
-        help="Liana backend used when exporting this list to Liana Mailer.",
+        domain=[("integration_type", "=", INTEGRATION_TYPE_MAILER)],
+        default=lambda self: self.env["liana.backend"]._get_default_backend(
+            INTEGRATION_TYPE_MAILER
+        ),
+        help="Liana Mailer backend used when exporting this list.",
     )
     liana_list_id = fields.Integer(
         string="Liana List ID",
@@ -89,6 +96,17 @@ class LianaMailingList(models.Model):
                 )
             else:
                 mailing_list.partner_count = len(mailing_list.partner_ids)
+
+    @api.constrains("liana_backend_id")
+    def _check_backend_integration_type(self):
+        for mailing_list in self:
+            backend = mailing_list.liana_backend_id
+            if backend and backend.integration_type != INTEGRATION_TYPE_MAILER:
+                raise ValidationError(_(
+                    "Backend %(backend)s is not a Liana Mailer backend and "
+                    "cannot export mailing lists.",
+                    backend=backend.display_name,
+                ))
 
     @api.constrains("recipient_mode", "partner_domain")
     def _check_partner_domain(self):
@@ -136,9 +154,13 @@ class LianaMailingList(models.Model):
 
     def _liana_get_backend(self):
         self.ensure_one()
-        backend = self.liana_backend_id or self.env["liana.backend"]._get_default_backend()
+        backend = self.liana_backend_id or self.env["liana.backend"]._get_default_backend(
+            INTEGRATION_TYPE_MAILER
+        )
         if not backend:
-            raise UserError(_("No Liana backend configured for this mailing list."))
+            raise UserError(_(
+                "No Liana Mailer backend configured for this mailing list."
+            ))
         # Backend/mapping/property config is admin-only; run export with elevated
         # rights so marketing managers can trigger it.
         return backend.sudo()

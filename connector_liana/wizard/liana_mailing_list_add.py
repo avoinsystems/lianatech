@@ -5,6 +5,8 @@ from odoo import Command, _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.fields import Domain
 
+from odoo.addons.connector_liana.models.liana_backend import INTEGRATION_TYPE_MAILER
+
 _logger = logging.getLogger(__name__)
 
 
@@ -29,7 +31,10 @@ class LianaMailingListAdd(models.TransientModel):
     liana_backend_id = fields.Many2one(
         comodel_name="liana.backend",
         string="Liana Backend",
-        default=lambda self: self.env["liana.backend"]._get_default_backend(),
+        domain=[("integration_type", "=", INTEGRATION_TYPE_MAILER)],
+        default=lambda self: self.env["liana.backend"]._get_default_backend(
+            INTEGRATION_TYPE_MAILER
+        ),
     )
     recipient_mode = fields.Selection(
         selection=[

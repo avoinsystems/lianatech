@@ -12,7 +12,13 @@
                             <field name="name" placeholder="Backend Name"/>
                         </h1>
                     </div>
-                    <group string="Liana Automation Configuration">
+                    <group>
+                        <field name="integration_type"
+                               widget="radio"
+                               options="{'horizontal': true}"/>
+                    </group>
+                    <group string="Liana Automation Configuration"
+                           invisible="integration_type != 'automation'">
                         <group >
                             <field name="liana_automation_address"/>
                             <field name="liana_automation_realm"/>
@@ -52,7 +58,8 @@
                             </div>
                         </group>
                     </group>
-                    <group string="Liana Mailer Configuration">
+                    <group string="Liana Mailer Configuration"
+                           invisible="integration_type != 'mailer'">
                         <field name="liana_mailer_address"/>
                             <field name="liana_mailer_realm"/>
                             <field name="liana_mailer_user"/>
@@ -114,8 +121,9 @@
         <field name="arch" type="xml">
             <list>
                 <field name="name"/>
-                <field name="liana_automation_address"/>
-                <field name="liana_mailer_address"/>
+                <field name="integration_type"/>
+                <field name="liana_automation_address" optional="hide"/>
+                <field name="liana_mailer_address" optional="hide"/>
             </list>
         </field>
     </record>
@@ -127,6 +135,18 @@
         <field name="arch" type="xml">
             <search>
                 <field name="name" string="Backend Name"/>
+                <field name="integration_type"/>
+                <filter name="filter_automation"
+                        string="Liana Automation"
+                        domain="[('integration_type', '=', 'automation')]"/>
+                <filter name="filter_mailer"
+                        string="Liana Mailer"
+                        domain="[('integration_type', '=', 'mailer')]"/>
+                <group colspan="16">
+                    <filter name="group_by_integration_type"
+                            string="Integration"
+                            context="{'group_by': 'integration_type'}"/>
+                </group>
             </search>
         </field>
     </record>
@@ -136,6 +156,20 @@
         <field name="name">Liana Backends</field>
         <field name="res_model">liana.backend</field>
         <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first Liana backend
+            </p>
+            <p>
+                A backend holds the API credentials of a single Liana
+                integration. Pick Liana Automation or Liana Mailer, fill in the
+                address, realm, user and secret from your Liana account, then
+                test the connection.
+            </p>
+            <p>
+                Using both integrations takes two backends, one of each kind.
+            </p>
+        </field>
     </record>
 </odoo>
 

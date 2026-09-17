@@ -19,6 +19,7 @@ class LianaMailerCommon(TransactionCase):
         super().setUpClass()
         cls.backend = cls.env["liana.backend"].create({
             "name": "Mailer backend",
+            "integration_type": "mailer",
             "liana_mailer_address": "https://rest.example.test",
             "liana_mailer_secret": "mailer-secret",
             "liana_mailer_user": "mailer-user",
@@ -179,6 +180,7 @@ class TestLianaMailerExport(LianaMailerCommon):
     def test_export_missing_mailer_settings(self):
         self.mailing_list.liana_backend_id = self.env["liana.backend"].create({
             "name": "Incomplete",
+            "integration_type": "mailer",
             "liana_mailer_address": "https://rest.example.test",
         })
         with self._patch_mailer() as mock_req:
@@ -192,7 +194,7 @@ class TestLianaMailerExport(LianaMailerCommon):
         self.mailing_list.liana_backend_id = False
         with self.assertRaises(UserError) as cm:
             self.mailing_list.action_export_to_liana()
-        self.assertIn("No Liana backend", str(cm.exception))
+        self.assertIn("No Liana Mailer backend", str(cm.exception))
 
     def test_export_uses_default_backend_when_unset(self):
         self.mailing_list.liana_backend_id = False
@@ -236,6 +238,7 @@ class TestLianaMailerExport(LianaMailerCommon):
             "name": "Broken list",
             "liana_backend_id": self.env["liana.backend"].create({
                 "name": "No mailer creds",
+                "integration_type": "mailer",
             }).id,
         })
         with self._patch_mailer(create_result=1):
