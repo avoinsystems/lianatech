@@ -14,11 +14,13 @@ class ResPartner(models.Model):
         comodel_name="liana.mailer.event",
         inverse_name="partner_id",
         string="Liana Mailer Events",
+        groups="connector_liana.group_liana_mailing",
     )
 
     liana_mailer_event_count = fields.Integer(
         string="Liana Mailer Events Count",
         compute="_compute_liana_mailer_event_count",
+        groups="connector_liana.group_liana_mailing",
     )
 
     liana_mailing_list_ids = fields.Many2many(

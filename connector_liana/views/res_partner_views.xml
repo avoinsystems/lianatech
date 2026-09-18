@@ -14,6 +14,7 @@
                         type="object"
                         class="oe_stat_button"
                         icon="fa-envelope-open-o"
+                        groups="connector_liana.group_liana_mailing"
                         invisible="liana_mailer_event_count == 0">
                     <field name="liana_mailer_event_count"
                            widget="statinfo"

@@ -32,13 +32,10 @@ class LianaChannel(models.Model):
         domain=[("integration_type", "=", INTEGRATION_TYPE_AUTOMATION)],
     )
 
-    _sql_constraints = [
-        (
-            "channel_backend_unique",
-            "UNIQUE(backend_id, channel_id)",
-            "A Liana channel must be unique per backend.",
-        ),
-    ]
+    _channel_backend_unique = models.Constraint(
+        "UNIQUE(backend_id, channel_id)",
+        "A Liana channel must be unique per backend.",
+    )
 
     def _selection_value(self):
         """Value sent as the Liana payload `channel` (system name preferred)."""

@@ -6,10 +6,13 @@ import json
 import hashlib
 import hmac
 import datetime
+import logging
 import time
 from urllib.parse import urlencode
 
 import pytz
+
+_logger = logging.getLogger(__name__)
 
 # --- General variables ---
 BASE_PATH    = 'rest'
@@ -19,6 +22,10 @@ BASE_PATH    = 'rest'
 MAILER_BASE_PATH = 'api'
 CONTENT_TYPE = 'application/json'
 METHOD       = 'POST'
+# Seconds a single Liana request may take. Both APIs are called from crons
+# paging through their endpoints, so a stalled connection must not hold on to
+# an Odoo worker indefinitely.
+REQUEST_TIMEOUT = 30
 # POST body: Liana Automation event/tracking payload (channel, no_duplicates, data, ...).
 AUTOMATION_API_EVENT_PATH = "v1/import"
 # POST body: empty object. Returns list of channels available on the account.
@@ -180,8 +187,8 @@ class LianaBackend(models.Model):
     mailer_log_chatter = fields.Boolean(
         string="Log Events on Contact Chatter",
         help="Log every imported Liana Mailer event of the types selected "
-             "below as a note on the chatter of the matched contact.",
-        default=True,
+             "below as a note on the chatter of the matched contact. Off by "
+             "default: a busy campaign posts a note per open and per click.",
     )
 
     mailer_log_open = fields.Boolean(
@@ -278,7 +285,9 @@ class LianaBackend(models.Model):
 
         try:
             send = requests.get if method == "GET" else requests.post
-            response = send(full_url, data=body, headers=headers)
+            response = send(
+                full_url, data=body, headers=headers, timeout=REQUEST_TIMEOUT,
+            )
             response.raise_for_status()  # Raises an error for 4xx or 5xx responses
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -369,19 +378,25 @@ class LianaBackend(models.Model):
         self.ensure_one()
         self._check_mailer_settings()
 
-        response = self.mailer_send_api_request("v1/echoMessage", ["hello"])
-        if isinstance(response, dict) and response.get("result") == "hello":
-            return {
-                "type": "ir.actions.client",
-                "tag": "display_notification",
-                "params": {
-                    "title": _("Success"),
-                    "message": _("Liana Mailer connection successful!"),
-                    "type": "success",
-                    "sticky": False,
-                },
-            }
-        raise LianaError(f"Unexpected response from Liana Mailer: {response!r}")
+        try:
+            response = self.mailer_send_api_request("v1/echoMessage", ["hello"])
+            if not (isinstance(response, dict) and response.get("result") == "hello"):
+                raise LianaError(
+                    f"Unexpected response from Liana Mailer: {response!r}"
+                )
+        except LianaError as err:
+            raise UserError(str(err)) from err
+
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": _("Success"),
+                "message": _("Liana Mailer connection successful!"),
+                "type": "success",
+                "sticky": False,
+            },
+        }
 
     def fetch_properties(self):
         """Call ``getCustomerProperties`` and upsert results into ``liana.property``.
@@ -498,7 +513,9 @@ class LianaBackend(models.Model):
         One paged request loop runs per event type since the endpoint accepts a
         single type at a time. Without an explicit period the events since the
         previous fetch are imported and the high-water mark is moved forward;
-        an explicit period leaves it untouched.
+        an explicit period leaves it untouched. Events the connector could not
+        read also hold the high-water mark back, so a payload it does not
+        understand is retried instead of being skipped for good.
         """
         self.ensure_one()
         self._check_mailer_settings()
@@ -511,6 +528,7 @@ class LianaBackend(models.Model):
         )
 
         events = self.env["liana.mailer.event"]
+        skipped = 0
         for event_type in self._get_mailer_event_types():
             offset = 0
             while True:
@@ -520,13 +538,21 @@ class LianaBackend(models.Model):
                 items = self._fetch_mailer_event_page(
                     event_type, date_from, date_to, offset,
                 )
-                events |= events._import_events(self, items)
+                imported, page_skipped = events._import_events(self, items)
+                events |= imported
+                skipped += page_skipped
                 if len(items) < MAILER_EVENT_PAGE_SIZE:
                     break
                 offset += MAILER_EVENT_PAGE_SIZE
 
         events._relink_unmatched(self)
-        if not explicit_period:
+        if skipped:
+            _logger.warning(
+                "Liana Mailer returned %s event(s) that backend %s (id=%s) could "
+                "not read; the period is kept for the next fetch.",
+                skipped, self.name, self.id,
+            )
+        elif not explicit_period:
             self.mailer_event_fetch_date = started_at - MAILER_EVENT_FETCH_OVERLAP
         return events
 
@@ -574,29 +600,34 @@ class LianaBackend(models.Model):
         Shows a notification message to the user on success.
                 
         Raises:
-            UserError: If connection fails or settings are missing
-            LianaError: If API response is unexpected
+            UserError: If connection fails, settings are missing or the API
+                response is unexpected
             
         Returns:
             dict: Client action to display success notification
         """
         self._check_automation_settings()
-        
-        response = self.automation_send_api_request('v1/pingpong', {"ping": "pong"})
+
         expected_response = {"pong": "pong"}
-        if response == expected_response:
-            return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': 'Success',
-                    'message': 'Liana Automation connection successful!',
-                    'type': 'success',
-                    'sticky': False,
-                }
+        try:
+            response = self.automation_send_api_request('v1/pingpong', {"ping": "pong"})
+            if response != expected_response:
+                raise LianaError(
+                    f"Unexpected response from Liana Automation: {response}"
+                )
+        except LianaError as err:
+            raise UserError(str(err)) from err
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Success',
+                'message': 'Liana Automation connection successful!',
+                'type': 'success',
+                'sticky': False,
             }
-        else:
-            raise LianaError(f"Unexpected response from Liana Automation: {response}")
+        }
 
     def fetch_channels(self):
         """Call channel/list and upsert results into liana.channel.

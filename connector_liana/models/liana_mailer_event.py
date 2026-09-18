@@ -110,19 +110,15 @@ class LianaMailerEvent(models.Model):
     dedup_key = fields.Char(
         string="Deduplication Key",
         required=True,
-        index=True,
         help="Fingerprint of the Liana Mailer event. The API does not identify "
              "events, so this is what keeps overlapping fetches from importing "
              "the same event twice.",
     )
 
-    _sql_constraints = [
-        (
-            "dedup_key_unique",
-            "UNIQUE(backend_id, dedup_key)",
-            "A Liana Mailer event can only be imported once per backend.",
-        ),
-    ]
+    _dedup_key_unique = models.Constraint(
+        "UNIQUE(backend_id, dedup_key)",
+        "A Liana Mailer event can only be imported once per backend.",
+    )
 
     @api.depends("event_type", "partner_id", "recipient_email", "event_date")
     def _compute_display_name(self):
@@ -137,15 +133,19 @@ class LianaMailerEvent(models.Model):
     def _import_events(self, backend, items):
         """Create the events of ``items`` that are not stored yet.
 
-        Returns the created records. Events already known by their
-        deduplication key are skipped, which makes re-fetching a period that
-        was fetched before a no-op.
+        Returns ``(created records, number of unreadable items)``. Events
+        already known by their deduplication key are skipped, which makes
+        re-fetching a period that was fetched before a no-op; items the
+        connector cannot make sense of are counted so the caller can tell a
+        quiet period from a payload it does not understand.
         """
         vals_list = []
         keys = set()
+        skipped = 0
         for item in items:
             if not isinstance(item, dict):
                 _logger.warning("Ignoring unexpected Liana Mailer event: %r", item)
+                skipped += 1
                 continue
             try:
                 vals = self._prepare_event_vals(backend, item)
@@ -153,6 +153,7 @@ class LianaMailerEvent(models.Model):
                 _logger.warning(
                     "Ignoring unparsable Liana Mailer event %r: %s", item, err
                 )
+                skipped += 1
                 continue
             if vals["dedup_key"] in keys:
                 continue
@@ -160,7 +161,7 @@ class LianaMailerEvent(models.Model):
             vals_list.append(vals)
 
         if not vals_list:
-            return self.browse()
+            return self.browse(), skipped
 
         known = set(self.search([
             ("backend_id", "=", backend.id),
@@ -170,7 +171,7 @@ class LianaMailerEvent(models.Model):
             vals for vals in vals_list if vals["dedup_key"] not in known
         ])
         events._log_on_partner_chatter()
-        return events
+        return events, skipped
 
     @api.model
     def _prepare_event_vals(self, backend, item):
@@ -250,11 +251,13 @@ class LianaMailerEvent(models.Model):
         """Return the event timestamp as a naive UTC datetime.
 
         Timestamps come with their offset; a timestamp without one is read in
-        the timezone the endpoint works in.
+        the timezone the endpoint works in. The lenient parser is used on
+        purpose: the API documents its own timestamps with an example that is
+        not valid ISO 8601, and an unreadable date costs the whole event.
         """
         if not value:
             raise ValueError("event has no date")
-        parsed = dateutil_parser.isoparse(value)
+        parsed = dateutil_parser.parse(value)
         if not parsed.tzinfo:
             parsed = pytz.timezone(MAILER_EVENT_TIMEZONE).localize(parsed)
         return parsed.astimezone(timezone.utc).replace(tzinfo=None)

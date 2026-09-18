@@ -4,10 +4,13 @@ from datetime import datetime, timedelta
 from unittest.mock import patch
 from urllib.parse import parse_qs, urlparse
 
+from psycopg2 import IntegrityError
+
 from odoo import fields
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
+from odoo.tools import mute_logger
 
 from odoo.addons.connector_liana.models import liana_backend as liana_backend_module
 from odoo.addons.connector_liana.models.liana_backend import (
@@ -198,6 +201,10 @@ class TestLianaMailerEventRequest(LianaMailerEventCommon):
         self.assertEqual(
             headers["Content-MD5"], hashlib.md5(b"").hexdigest(),
         )
+        self.assertEqual(
+            mock_get.call_args.kwargs["timeout"],
+            liana_backend_module.REQUEST_TIMEOUT,
+        )
         expected_signature = liana_backend_module.hmac.new(
             b"mailer-secret",
             "\n".join([
@@ -261,6 +268,14 @@ class TestLianaMailerEventImport(LianaMailerEventCommon):
         stored = self.events.search([("event_type", "=", MAILER_EVENT_TYPE_OPEN)])
         self.assertEqual(stored.event_date, datetime(2026, 3, 2, 12, 30, 0))
 
+    def test_import_reads_a_date_that_is_not_iso_8601(self):
+        event = self._event(at="Mon, 02 Mar 2026 14:30:00 +0200")
+        with self._patch_events(pages_by_type={MAILER_EVENT_TYPE_OPEN: [[event]]}):
+            events = self.backend.fetch_mailer_events()
+
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events.event_date, datetime(2026, 3, 2, 12, 30, 0))
+
     def test_import_links_mailing_list(self):
         mailing_list = self.env["liana.mailing.list"].create({
             "name": "Newsletter",
@@ -285,6 +300,23 @@ class TestLianaMailerEventImport(LianaMailerEventCommon):
         self.assertEqual(
             self.events.search_count([("event_type", "=", MAILER_EVENT_TYPE_OPEN)]), 1,
         )
+
+    def test_the_database_refuses_a_duplicated_event(self):
+        # The import pre-checks the deduplication key, but two fetches running
+        # at the same time would both pass that check.
+        values = {
+            "backend_id": self.backend.id,
+            "event_type": MAILER_EVENT_TYPE_OPEN,
+            "event_date": fields.Datetime.now(),
+            "dedup_key": "duplicate-me",
+        }
+        self.events.create(values)
+        self.env.flush_all()
+
+        with self.assertRaises(IntegrityError), mute_logger("odoo.sql_db"):
+            with self.env.cr.savepoint():
+                self.events.create(dict(values))
+                self.env.flush_all()
 
     def test_duplicates_within_one_page_are_imported_once(self):
         event = self._event()
@@ -327,6 +359,19 @@ class TestLianaMailerEventImport(LianaMailerEventCommon):
         self.assertGreater(
             self.backend.mailer_event_fetch_date, before - timedelta(hours=2),
         )
+
+    def test_unreadable_event_keeps_high_water_mark(self):
+        page = [
+            self._event(),
+            self._event(email="bob@example.test", at="every other tuesday"),
+        ]
+        with self._patch_events(pages_by_type={MAILER_EVENT_TYPE_OPEN: [page]}):
+            events = self.backend.fetch_mailer_events()
+
+        # The readable event is imported, but the period is fetched again so
+        # the one that was dropped gets another chance.
+        self.assertEqual(len(events), 1)
+        self.assertFalse(self.backend.mailer_event_fetch_date)
 
     def test_explicit_period_keeps_high_water_mark(self):
         with self._patch_events():
@@ -516,6 +561,66 @@ class TestLianaMailerEventPartnerSmartButton(LianaMailerEventCommon):
 
     def test_count_is_zero_without_events(self):
         self.assertEqual(self.partner.liana_mailer_event_count, 0)
+
+
+@tagged("post_install", "-at_install")
+class TestLianaMailerEventAccess(LianaMailerEventCommon):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.event = cls.env["liana.mailer.event"].create({
+            "backend_id": cls.backend.id,
+            "event_type": MAILER_EVENT_TYPE_OPEN,
+            "event_date": fields.Datetime.now(),
+            "partner_id": cls.partner.id,
+            "partner_match": "email",
+            "recipient_email": "alice@example.test",
+            "dedup_key": "access-test",
+        })
+        cls.mailing_user = cls.env["res.users"].create({
+            "name": "Liana Marketer",
+            "login": "liana.event.marketer",
+            "group_ids": [(6, 0, [
+                cls.env.ref("base.group_user").id,
+                cls.env.ref("connector_liana.group_liana_mailing").id,
+            ])],
+        })
+        cls.plain_user = cls.env["res.users"].create({
+            "name": "Plain User",
+            "login": "liana.event.plain",
+            "group_ids": [(6, 0, [cls.env.ref("base.group_user").id])],
+        })
+
+    def test_mailing_group_can_read_events(self):
+        self.assertEqual(
+            self.event.with_user(self.mailing_user).recipient_email,
+            "alice@example.test",
+        )
+
+    def test_plain_user_cannot_read_events(self):
+        with self.assertRaises(AccessError):
+            self.event.with_user(self.plain_user).read(["recipient_email"])
+
+    def test_plain_user_cannot_search_events(self):
+        with self.assertRaises(AccessError):
+            self.env["liana.mailer.event"].with_user(self.plain_user).search([])
+
+    def test_plain_user_does_not_see_the_event_fields_on_contacts(self):
+        partner_fields = self.env["res.partner"].with_user(
+            self.plain_user
+        ).fields_get()
+
+        self.assertNotIn("liana_mailer_event_ids", partner_fields)
+        self.assertNotIn("liana_mailer_event_count", partner_fields)
+
+    def test_mailing_group_sees_the_event_fields_on_contacts(self):
+        partner_fields = self.env["res.partner"].with_user(
+            self.mailing_user
+        ).fields_get()
+
+        self.assertIn("liana_mailer_event_ids", partner_fields)
+        self.assertIn("liana_mailer_event_count", partner_fields)
 
 
 @tagged("post_install", "-at_install")

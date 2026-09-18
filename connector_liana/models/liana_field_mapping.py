@@ -36,10 +36,7 @@ class LianaFieldMapping(models.Model):
         readonly=True,
     )
 
-    _sql_constraints = [
-        (
-            "mapping_field_unique",
-            "UNIQUE(backend_id, partner_field_id)",
-            "A partner field can only be mapped once per backend.",
-        ),
-    ]
+    _mapping_field_unique = models.Constraint(
+        "UNIQUE(backend_id, partner_field_id)",
+        "A partner field can only be mapped once per backend.",
+    )
