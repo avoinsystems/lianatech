@@ -519,6 +519,90 @@ class TestLianaMailerEventPartnerSmartButton(LianaMailerEventCommon):
 
 
 @tagged("post_install", "-at_install")
+class TestLianaMailerEventChatter(LianaMailerEventCommon):
+
+    def _notes(self, partner=None):
+        """Return the Liana Mailer notes logged on a contact's chatter."""
+        partner = partner or self.partner
+        return self.env["mail.message"].search([
+            ("model", "=", "res.partner"),
+            ("res_id", "=", partner.id),
+            ("subtype_id", "=", self.env.ref("mail.mt_note").id),
+        ]).filtered(lambda message: "Liana Mailer" in (message.body or ""))
+
+    def _open_and_click_pages(self):
+        return {
+            MAILER_EVENT_TYPE_OPEN: [[self._event()]],
+            MAILER_EVENT_TYPE_CLICK: [[
+                self._event(
+                    event_type=MAILER_EVENT_TYPE_CLICK,
+                    data={"url": "https://example.test/offer"},
+                    liana_list={"id": 7, "name": "Newsletter"},
+                ),
+            ]],
+        }
+
+    def test_nothing_is_logged_by_default(self):
+        with self._patch_events(pages_by_type=self._open_and_click_pages()):
+            self.backend.fetch_mailer_events()
+
+        self.assertFalse(self._notes())
+
+    def test_one_note_per_matched_event(self):
+        self.backend.mailer_log_chatter = True
+        with self._patch_events(pages_by_type=self._open_and_click_pages()):
+            self.backend.fetch_mailer_events()
+
+        notes = self._notes()
+        self.assertEqual(len(notes), 2)
+        click_note = notes.filtered(lambda note: "Click" in note.body)
+        self.assertEqual(len(click_note), 1)
+        self.assertIn("https://example.test/offer", click_note.body)
+        self.assertIn("Newsletter", click_note.body)
+
+    def test_deselected_event_type_is_not_logged(self):
+        self.backend.write({
+            "mailer_log_chatter": True,
+            "mailer_log_open": False,
+        })
+        with self._patch_events(pages_by_type=self._open_and_click_pages()):
+            self.backend.fetch_mailer_events()
+
+        notes = self._notes()
+        self.assertEqual(len(notes), 1)
+        self.assertIn("Click", notes.body)
+
+    def test_unmatched_event_is_logged_once_relinked(self):
+        self.backend.mailer_log_chatter = True
+        event = self._event(email="carol@example.test")
+        pages = {MAILER_EVENT_TYPE_OPEN: [[event]]}
+        with self._patch_events(pages_by_type=pages):
+            stored = self.backend.fetch_mailer_events()
+        self.assertFalse(stored.partner_id)
+
+        carol = self.env["res.partner"].create({
+            "name": "Carol",
+            "email": "carol@example.test",
+        })
+        self.assertFalse(self._notes(carol))
+
+        with self._patch_events():
+            self.backend.fetch_mailer_events()
+
+        self.assertEqual(len(self._notes(carol)), 1)
+
+    def test_refetching_the_same_period_adds_no_notes(self):
+        self.backend.mailer_log_chatter = True
+        pages = {MAILER_EVENT_TYPE_OPEN: [[self._event()]]}
+        with self._patch_events(pages_by_type=pages):
+            self.backend.fetch_mailer_events()
+        with self._patch_events(pages_by_type=pages):
+            self.backend.fetch_mailer_events()
+
+        self.assertEqual(len(self._notes()), 1)
+
+
+@tagged("post_install", "-at_install")
 class TestLianaMailerExtra1Export(LianaMailerEventCommon):
 
     def setUp(self):

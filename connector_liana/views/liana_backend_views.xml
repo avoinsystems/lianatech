@@ -68,6 +68,10 @@
                                    placeholder="e.g. Odoo/Newsletters"/>
                             <field name="mailer_extra1_property_id"/>
                             <field name="mailer_event_fetch_date"/>
+                            <field name="mailer_log_chatter"/>
+                            <field name="mailer_log_open" invisible="not mailer_log_chatter"/>
+                            <field name="mailer_log_click" invisible="not mailer_log_chatter"/>
+                            <field name="mailer_log_subscribe" invisible="not mailer_log_chatter"/>
                             <button
                                     name="test_mailer_connection"
                                     type="object"

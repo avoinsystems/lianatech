@@ -5,8 +5,10 @@ from datetime import timezone
 
 import pytz
 from dateutil import parser as dateutil_parser
+from markupsafe import Markup
 
 from odoo import _, api, fields, models
+from odoo.tools import format_datetime
 
 from .liana_backend import (
     INTEGRATION_TYPE_MAILER,
@@ -164,9 +166,11 @@ class LianaMailerEvent(models.Model):
             ("backend_id", "=", backend.id),
             ("dedup_key", "in", list(keys)),
         ]).mapped("dedup_key"))
-        return self.create([
+        events = self.create([
             vals for vals in vals_list if vals["dedup_key"] not in known
         ])
+        events._log_on_partner_chatter()
+        return events
 
     @api.model
     def _prepare_event_vals(self, backend, item):
@@ -308,7 +312,51 @@ class LianaMailerEvent(models.Model):
         for (partner, match), events in by_partner.items():
             events.write({"partner_id": partner.id, "partner_match": match})
             relinked |= events
+        relinked._log_on_partner_chatter()
         return relinked
+
+    def _log_on_partner_chatter(self):
+        """Log the events of this recordset on their contact's chatter.
+
+        Which event types are logged is configured per backend, so the events
+        are grouped by backend before the setting is read. Events without a
+        contact are logged once matching succeeds, from
+        :meth:`_relink_unmatched`.
+        """
+        for backend, events in self.grouped("backend_id").items():
+            event_types = backend._get_mailer_chatter_event_types()
+            if not event_types:
+                continue
+            for event in events:
+                if not event.partner_id or event.event_type not in event_types:
+                    continue
+                # The note only restates data the reader of the contact can
+                # already see, and posting it must not depend on the rights of
+                # whoever triggered the fetch.
+                event.partner_id.sudo().message_post(
+                    body=event._chatter_message_body(),
+                    subtype_xmlid="mail.mt_note",
+                )
+
+    def _chatter_message_body(self):
+        """Return the chatter note describing this event."""
+        self.ensure_one()
+        types = dict(self._fields["event_type"].selection)
+        body = Markup("<b>%s</b>") % _(
+            "Liana Mailer: %s", types.get(self.event_type, self.event_type),
+        )
+        details = [(_("Date"), format_datetime(self.env, self.event_date))]
+        if self.liana_list_name:
+            details.append((_("Mailing List"), self.liana_list_name))
+        if self.url:
+            details.append((_("URL"), Markup(
+                '<a href="%s" target="_blank" rel="noreferrer">%s</a>'
+            ) % (self.url, self.url)))
+        if self.reason:
+            details.append((_("Reason"), self.reason))
+        for label, value in details:
+            body += Markup("<br/>%s: %s") % (label, value)
+        return body
 
     def action_relink_partners(self):
         """Retry contact matching from the user interface."""

@@ -45,6 +45,12 @@ MAILER_FETCHED_EVENT_TYPES = (
     MAILER_EVENT_TYPE_CLICK,
     MAILER_EVENT_TYPE_SUBSCRIBE,
 )
+# Backend field switching contact chatter logging on per fetched event type.
+MAILER_EVENT_CHATTER_FIELDS = {
+    MAILER_EVENT_TYPE_OPEN: "mailer_log_open",
+    MAILER_EVENT_TYPE_CLICK: "mailer_log_click",
+    MAILER_EVENT_TYPE_SUBSCRIBE: "mailer_log_subscribe",
+}
 # Events are paged; the API documentation recommends pages of 100.
 MAILER_EVENT_PAGE_SIZE = 100
 # The API allows four requests per second at most.
@@ -169,6 +175,28 @@ class LianaBackend(models.Model):
         copy=False,
         help="Start of the period covered by the next Liana Mailer event fetch. "
              "Set automatically after each successful fetch.",
+    )
+
+    mailer_log_chatter = fields.Boolean(
+        string="Log Events on Contact Chatter",
+        help="Log every imported Liana Mailer event of the types selected "
+             "below as a note on the chatter of the matched contact.",
+        default=True,
+    )
+
+    mailer_log_open = fields.Boolean(
+        string="Log Opens",
+        default=True,
+    )
+
+    mailer_log_click = fields.Boolean(
+        string="Log Clicks",
+        default=True,
+    )
+
+    mailer_log_subscribe = fields.Boolean(
+        string="Log Subscribes",
+        default=True,
     )
 
     mailer_extra1_property_id = fields.Many2one(
@@ -411,6 +439,17 @@ class LianaBackend(models.Model):
     def _get_mailer_event_types(self):
         """Return the Mailer event types fetched by this backend."""
         return MAILER_FETCHED_EVENT_TYPES
+
+    def _get_mailer_chatter_event_types(self):
+        """Return the event types this backend logs on the contact chatter."""
+        self.ensure_one()
+        if not self.mailer_log_chatter:
+            return frozenset()
+        return frozenset(
+            event_type
+            for event_type, field_name in MAILER_EVENT_CHATTER_FIELDS.items()
+            if self[field_name]
+        )
 
     def _mailer_event_datetime_param(self, value):
         """Format a naive UTC datetime as the local time the API expects."""
