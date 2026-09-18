@@ -6,15 +6,81 @@ import json
 import hashlib
 import hmac
 import datetime
+import logging
+import time
+from urllib.parse import urlencode
+
+import pytz
+
+_logger = logging.getLogger(__name__)
 
 # --- General variables ---
 BASE_PATH    = 'rest'
+# Base path segment for the LianaMailer REST API. Unlike Automation (``rest``)
+# the Mailer API is served under ``/api`` and V1 request bodies are positional
+# JSON arrays rather than objects.
+MAILER_BASE_PATH = 'api'
 CONTENT_TYPE = 'application/json'
 METHOD       = 'POST'
+# Seconds a single Liana request may take. Both APIs are called from crons
+# paging through their endpoints, so a stalled connection must not hold on to
+# an Odoo worker indefinitely.
+REQUEST_TIMEOUT = 30
 # POST body: Liana Automation event/tracking payload (channel, no_duplicates, data, ...).
 AUTOMATION_API_EVENT_PATH = "v1/import"
 # POST body: empty object. Returns list of channels available on the account.
 AUTOMATION_API_CHANNEL_LIST_PATH = "v1/channel/list"
+# POST body: empty array. Returns the account's customer properties (field catalog).
+MAILER_API_PROPERTIES_PATH = "v1/getCustomerProperties"
+# POST body: keyed object with the list name/id, base64 CSV payload and folder.
+# This is the only endpoint accepting a folder, both when creating a list and
+# when moving an existing one.
+MAILER_API_IMPORT_LIST_PATH = "v2/import/mailinglist"
+# POST body: positional array [list_id, new_name, new_description]. The import
+# endpoint cannot carry a description, so it is set in a follow-up call.
+MAILER_API_EDIT_LIST_PATH = "v1/editMailingList"
+# GET with URL parameters only. Returns recipient tracking events.
+MAILER_API_EVENTS_PATH = "v3/events"
+
+# Event types fetched from the Mailer ``events`` endpoint. The endpoint accepts
+# a single type per request, so one paged request loop runs per type.
+MAILER_EVENT_TYPE_OPEN = "mailopen"
+MAILER_EVENT_TYPE_CLICK = "maillink"
+MAILER_EVENT_TYPE_SUBSCRIBE = "list-join"
+MAILER_FETCHED_EVENT_TYPES = (
+    MAILER_EVENT_TYPE_OPEN,
+    MAILER_EVENT_TYPE_CLICK,
+    MAILER_EVENT_TYPE_SUBSCRIBE,
+)
+# Backend field switching contact chatter logging on per fetched event type.
+MAILER_EVENT_CHATTER_FIELDS = {
+    MAILER_EVENT_TYPE_OPEN: "mailer_log_open",
+    MAILER_EVENT_TYPE_CLICK: "mailer_log_click",
+    MAILER_EVENT_TYPE_SUBSCRIBE: "mailer_log_subscribe",
+}
+# Events are paged; the API documentation recommends pages of 100.
+MAILER_EVENT_PAGE_SIZE = 100
+# The API allows four requests per second at most.
+MAILER_REQUEST_INTERVAL = 0.25
+# Timezone the ``events`` endpoint expects ``at_start``/``at_end`` in.
+MAILER_EVENT_TIMEZONE = "Europe/Helsinki"
+# Events are re-fetched from slightly before the last run to catch events
+# registered late by Liana. Duplicates are dropped on import.
+MAILER_EVENT_FETCH_OVERLAP = datetime.timedelta(hours=1)
+# Period covered by the very first fetch of a backend.
+MAILER_EVENT_INITIAL_LOOKBACK = datetime.timedelta(days=7)
+# Partner field carrying the Liana identity, matched against the Mailer
+# property it is mapped to.
+LIANA_EXTRA1_FIELD = "liana_extra1"
+
+# Property handles reserved by LianaMailer; they must not be sent as custom
+# properties in import payloads (see the API "Restrictions" documentation).
+MAILER_RESERVED_PROPERTY_NAMES = frozenset({
+    "admin", "archive", "delivery_id", "email", "id", "ip", "list_id",
+    "list_name", "mail_id", "origin", "reason", "recipient_email",
+    "recipient_sms", "scheduled", "sms", "subject", "tracking_id", "url",
+    "useragent",
+})
 
 # XML ids of the default Liana server actions shipped in
 # ``data/default_automations.xml``. Used by
@@ -23,6 +89,25 @@ DEFAULT_AUTOMATION_ACTION_XMLIDS = (
     "connector_liana.ir_actions_server_crm_lead_stage_changed",
     "connector_liana.ir_actions_server_sale_order_state_changed",
 )
+
+INTEGRATION_TYPE_AUTOMATION = "automation"
+INTEGRATION_TYPE_MAILER = "mailer"
+
+# Records owned by each integration type, as ``(model, field)`` pairs. A backend
+# cannot be retyped while any of them still points at it.
+INTEGRATION_TYPE_REFERENCES = {
+    INTEGRATION_TYPE_AUTOMATION: (
+        ("liana.channel", "backend_id"),
+        ("ir.actions.server", "liana_backend_id"),
+        ("liana.event", "backend_id"),
+    ),
+    INTEGRATION_TYPE_MAILER: (
+        ("liana.property", "backend_id"),
+        ("liana.field.mapping", "backend_id"),
+        ("liana.mailing.list", "liana_backend_id"),
+        ("liana.mailer.event", "backend_id"),
+    ),
+}
 
 
 class LianaError(Exception):
@@ -34,6 +119,18 @@ class LianaBackend(models.Model):
     _description = "Liana Integration Backend Configuration"
 
     name = fields.Char(required=True)
+
+    integration_type = fields.Selection(
+        selection=[
+            (INTEGRATION_TYPE_AUTOMATION, "Liana Automation"),
+            (INTEGRATION_TYPE_MAILER, "Liana Mailer"),
+        ],
+        string="Integration",
+        required=True,
+        default=INTEGRATION_TYPE_AUTOMATION,
+        help="Integration this backend connects to. A backend serves one "
+             "integration; configure a second backend for the other one.",
+    )
 
     liana_automation_address = fields.Char(
         string="Automation Address",
@@ -53,69 +150,203 @@ class LianaBackend(models.Model):
         string="Automation Realm",
     )
 
+    liana_mailer_address = fields.Char(
+        string="Mailer Address",
+        help="Base URL of the LianaMailer REST API, e.g. https://rest.lianamailer.com",
+    )
+
+    liana_mailer_secret = fields.Char(
+        string="Mailer Secret",
+        copy=False,
+    )
+
+    liana_mailer_user = fields.Char(
+        string="Mailer User",
+        copy=False,
+    )
+
+    liana_mailer_realm = fields.Char(
+        string="Mailer Realm",
+    )
+
+    mailing_list_folder = fields.Char(
+        string="Mailing List Folder",
+        help="Default Liana Mailer folder path for lists exported through this "
+             "backend. Multi-level paths are supported and created on demand.",
+        default="Odoo",
+    )
+
+    mailer_event_fetch_date = fields.Datetime(
+        string="Events Fetched Until",
+        readonly=True,
+        copy=False,
+        help="Start of the period covered by the next Liana Mailer event fetch. "
+             "Set automatically after each successful fetch.",
+    )
+
+    mailer_log_chatter = fields.Boolean(
+        string="Log Events on Contact Chatter",
+        help="Log every imported Liana Mailer event of the types selected "
+             "below as a note on the chatter of the matched contact. Off by "
+             "default: a busy campaign posts a note per open and per click.",
+    )
+
+    mailer_log_open = fields.Boolean(
+        string="Log Opens",
+        default=True,
+    )
+
+    mailer_log_click = fields.Boolean(
+        string="Log Clicks",
+        default=True,
+    )
+
+    mailer_log_subscribe = fields.Boolean(
+        string="Log Subscribes",
+        default=True,
+    )
+
+    mailer_extra1_property_id = fields.Many2one(
+        comodel_name="liana.property",
+        string="Liana ID Property",
+        compute="_compute_mailer_extra1_property_id",
+        help="Liana Mailer property the contacts' Liana ID is exported to, "
+             "taken from the field mappings below. When set, mailer events are "
+             "matched to contacts by this property instead of the email address.",
+    )
+
+    property_ids = fields.One2many(
+        comodel_name="liana.property",
+        inverse_name="backend_id",
+        string="Liana Properties",
+    )
+
+    mapping_ids = fields.One2many(
+        comodel_name="liana.field.mapping",
+        inverse_name="backend_id",
+        string="Field Mappings",
+    )
+
     liana_channel_id = fields.Many2one(
         comodel_name="liana.channel",
         string="Default Liana Channel",
         domain="[('backend_id', '=', id), ('system_name', 'not in', ('system', 'esp'))]",
     )
 
-    def automation_send_api_request(self, path, data):
-        """
-        Sends an authenticated API request to Liana Automation.
+    def _send_signed_request(
+        self, base_path, path, data, address, secret, user, realm, method=METHOD,
+    ):
+        """Send an HMAC-signed request to a Liana REST API and return the JSON body.
+
+        The signing scheme (SHA256 HMAC over method/md5/content-type/date/body/
+        path) is shared by both the Automation and Mailer APIs; only the base
+        path segment, credentials and body encoding differ.
+
+        V3 Mailer endpoints are GET-only and take their parameters in the URL,
+        so ``path`` carries the query string and the signed body is empty.
         """
         self.ensure_one()
 
-        # 1. Prepare Data
-        json_data = json.dumps(data)
+        body = "" if method == "GET" else json.dumps(data)
 
-        # 2. Get Current Date (ISO 8601)
-        # PHP' 'c' format is roughly equivalent to isoformat()
-        date_str = datetime.datetime.now().astimezone().isoformat(timespec='seconds')  #
+        # ISO 8601 date; PHP's 'c' format is roughly equivalent to isoformat().
+        date_str = datetime.datetime.now().astimezone().isoformat(timespec='seconds')
 
-        # 3. MD5 Hash of the body
-        content_md5 = hashlib.md5(json_data.encode('utf-8')).hexdigest()
+        content_md5 = hashlib.md5(body.encode('utf-8')).hexdigest()
 
-        # 4. Create Signature Content
-        # Order: Method, MD5, Content-Type, Date, Data, Full Path
-        full_api_path = f"/{BASE_PATH}/{path}"
+        # Signature content order: Method, MD5, Content-Type, Date, Body, Path.
+        # The path must include the query string exactly as requested.
+        full_api_path = f"/{base_path}/{path}"
         signature_payload = "\n".join([
-            METHOD,
+            method,
             content_md5,
             CONTENT_TYPE,
             date_str,
-            json_data,
-            full_api_path
+            body,
+            full_api_path,
         ])
 
-        # 5. Generate HMAC SHA256 Signature
         signature = hmac.new(
-            self.liana_automation_secret.encode('utf-8'),
+            (secret or "").encode('utf-8'),
             signature_payload.encode('utf-8'),
-            hashlib.sha256
+            hashlib.sha256,
         ).hexdigest()
 
-        # 6. Create Authorization Header
-        auth_header = f"{self.liana_automation_realm} {self.liana_automation_user}:{signature}"
+        auth_header = f"{realm} {user}:{signature}"
 
-        # 7. Setup Headers
         headers = {
             "Authorization": auth_header,
             "Date": date_str,
             "Content-MD5": content_md5,
-            "Content-Type": CONTENT_TYPE
+            "Content-Type": CONTENT_TYPE,
         }
 
-        # 8. Send Request
-        full_url = f"{self.liana_automation_address}/{BASE_PATH}/{path}"
+        full_url = f"{address}/{base_path}/{path}"
 
         try:
-            response = requests.post(full_url, data=json_data, headers=headers)
+            send = requests.get if method == "GET" else requests.post
+            response = send(
+                full_url, data=body, headers=headers, timeout=REQUEST_TIMEOUT,
+            )
             response.raise_for_status()  # Raises an error for 4xx or 5xx responses
             return response.json()
         except requests.exceptions.RequestException as e:
             raise LianaError(f"API request failed: {str(e)}")
 
+    def automation_send_api_request(self, path, data):
+        """Sends an authenticated API request to Liana Automation."""
+        return self._send_signed_request(
+            BASE_PATH,
+            path,
+            data,
+            self.liana_automation_address,
+            self.liana_automation_secret,
+            self.liana_automation_user,
+            self.liana_automation_realm,
+        )
+
+    def mailer_send_api_request(self, path, params):
+        """Send an authenticated request to the LianaMailer REST API.
+
+        V1 endpoints identify parameters positionally, so ``params`` is a list
+        there (empty for endpoints taking no parameters). V2 endpoints identify
+        them by key, so ``params`` is a dict.
+        """
+        return self._send_signed_request(
+            MAILER_BASE_PATH,
+            path,
+            params,
+            self.liana_mailer_address,
+            self.liana_mailer_secret,
+            self.liana_mailer_user,
+            self.liana_mailer_realm,
+        )
+
+    def mailer_get_api_request(self, path, params):
+        """Send an authenticated GET request to the LianaMailer REST API.
+
+        V3 endpoints take all their parameters in the URL. The query string is
+        built once and signed as part of the path, so it has to reach the
+        request unchanged.
+        """
+        query = urlencode(params or {})
+        return self._send_signed_request(
+            MAILER_BASE_PATH,
+            f"{path}?{query}" if query else path,
+            None,
+            self.liana_mailer_address,
+            self.liana_mailer_secret,
+            self.liana_mailer_user,
+            self.liana_mailer_realm,
+            method="GET",
+        )
+
     def _check_automation_settings(self):
+        if self.integration_type != INTEGRATION_TYPE_AUTOMATION:
+            raise UserError(_(
+                "Backend %s is a Liana Mailer backend and cannot be used for "
+                "Liana Automation.", self.display_name,
+            ))
         if any((
             not self.liana_automation_address,
             not self.liana_automation_secret,
@@ -123,6 +354,226 @@ class LianaBackend(models.Model):
             not self.liana_automation_realm,
         )):
             raise UserError("Please fill in all Liana Automation settings to test the connection.")
+
+    def _has_mailer_settings(self):
+        self.ensure_one()
+        return self.integration_type == INTEGRATION_TYPE_MAILER and all((
+            self.liana_mailer_address,
+            self.liana_mailer_secret,
+            self.liana_mailer_user,
+            self.liana_mailer_realm,
+        ))
+
+    def _check_mailer_settings(self):
+        if self.integration_type != INTEGRATION_TYPE_MAILER:
+            raise UserError(_(
+                "Backend %s is a Liana Automation backend and cannot be used "
+                "for Liana Mailer.", self.display_name,
+            ))
+        if not self._has_mailer_settings():
+            raise UserError(_("Please fill in all Liana Mailer settings first."))
+
+    def test_mailer_connection(self):
+        """Test connection to the LianaMailer API using the ``echoMessage`` endpoint."""
+        self.ensure_one()
+        self._check_mailer_settings()
+
+        try:
+            response = self.mailer_send_api_request("v1/echoMessage", ["hello"])
+            if not (isinstance(response, dict) and response.get("result") == "hello"):
+                raise LianaError(
+                    f"Unexpected response from Liana Mailer: {response!r}"
+                )
+        except LianaError as err:
+            raise UserError(str(err)) from err
+
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": _("Success"),
+                "message": _("Liana Mailer connection successful!"),
+                "type": "success",
+                "sticky": False,
+            },
+        }
+
+    def fetch_properties(self):
+        """Call ``getCustomerProperties`` and upsert results into ``liana.property``.
+
+        Returns the recordset of properties present for this backend after sync.
+        """
+        self.ensure_one()
+        self._check_mailer_settings()
+
+        response = self.mailer_send_api_request(MAILER_API_PROPERTIES_PATH, [])
+        # Successful responses wrap the payload in a ``result`` list.
+        if not isinstance(response, dict) or "result" not in response:
+            raise LianaError(
+                f"Unexpected response from Liana Mailer getCustomerProperties: {response!r}"
+            )
+        items = response.get("result")
+        if not isinstance(items, list):
+            raise LianaError(
+                f"Unexpected response from Liana Mailer getCustomerProperties: {response!r}"
+            )
+        return self.env["liana.property"].sudo()._update_from_api(self, items)
+
+    def action_fetch_liana_properties(self):
+        """Refresh ``liana.property`` from the LianaMailer ``getCustomerProperties`` endpoint."""
+        self.ensure_one()
+        try:
+            properties = self.fetch_properties()
+        except LianaError as err:
+            raise UserError(str(err)) from err
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": _("Liana Properties"),
+                "message": _("Fetched %s propert(y/ies) from Liana Mailer.") % len(properties),
+                "type": "success",
+                "sticky": False,
+                "next": {"type": "ir.actions.client", "tag": "reload"},
+            },
+        }
+
+    @api.depends("mapping_ids.partner_field_id", "mapping_ids.liana_property_id")
+    def _compute_mailer_extra1_property_id(self):
+        for backend in self:
+            backend.mailer_extra1_property_id = backend._get_extra1_property()
+
+    def _get_extra1_property(self):
+        """Return the Mailer property the contacts' Liana ID is exported to."""
+        self.ensure_one()
+        mapping = self.mapping_ids.filtered(
+            lambda m: m.partner_field_id.name == LIANA_EXTRA1_FIELD
+        )
+        return mapping[:1].liana_property_id
+
+    def _get_mailer_event_types(self):
+        """Return the Mailer event types fetched by this backend."""
+        return MAILER_FETCHED_EVENT_TYPES
+
+    def _get_mailer_chatter_event_types(self):
+        """Return the event types this backend logs on the contact chatter."""
+        self.ensure_one()
+        if not self.mailer_log_chatter:
+            return frozenset()
+        return frozenset(
+            event_type
+            for event_type, field_name in MAILER_EVENT_CHATTER_FIELDS.items()
+            if self[field_name]
+        )
+
+    def _mailer_event_datetime_param(self, value):
+        """Format a naive UTC datetime as the local time the API expects."""
+        local = pytz.utc.localize(value).astimezone(
+            pytz.timezone(MAILER_EVENT_TIMEZONE)
+        )
+        return local.replace(tzinfo=None).isoformat(timespec="seconds")
+
+    def _mailer_event_params(self, event_type, date_from, date_to, offset):
+        """Build the query parameters of one ``events`` request."""
+        self.ensure_one()
+        params = {
+            "type": event_type,
+            "at_start": self._mailer_event_datetime_param(date_from),
+            "at_end": self._mailer_event_datetime_param(date_to),
+            "limit": MAILER_EVENT_PAGE_SIZE,
+            "offset": offset,
+            "sort": "at",
+            "list_data": "true",
+        }
+        extra1_property = self._get_extra1_property()
+        if extra1_property:
+            # Recipient properties are omitted from the response unless asked
+            # for by name.
+            params["properties[0]"] = extra1_property.name
+        return params
+
+    def _fetch_mailer_event_page(self, event_type, date_from, date_to, offset):
+        """Return one page of events, validating the response envelope."""
+        self.ensure_one()
+        response = self.mailer_get_api_request(
+            MAILER_API_EVENTS_PATH,
+            self._mailer_event_params(event_type, date_from, date_to, offset),
+        )
+        items = response.get("items") if isinstance(response, dict) else None
+        if not isinstance(items, list):
+            raise LianaError(
+                f"Unexpected response from Liana Mailer "
+                f"{MAILER_API_EVENTS_PATH}: {response!r}"
+            )
+        return items
+
+    def fetch_mailer_events(self, date_from=None, date_to=None):
+        """Import Liana Mailer events into ``liana.mailer.event``.
+
+        One paged request loop runs per event type since the endpoint accepts a
+        single type at a time. Without an explicit period the events since the
+        previous fetch are imported and the high-water mark is moved forward;
+        an explicit period leaves it untouched. Events the connector could not
+        read also hold the high-water mark back, so a payload it does not
+        understand is retried instead of being skipped for good.
+        """
+        self.ensure_one()
+        self._check_mailer_settings()
+
+        started_at = fields.Datetime.now()
+        explicit_period = bool(date_to)
+        date_to = date_to or started_at
+        date_from = date_from or self.mailer_event_fetch_date or (
+            date_to - MAILER_EVENT_INITIAL_LOOKBACK
+        )
+
+        events = self.env["liana.mailer.event"]
+        skipped = 0
+        for event_type in self._get_mailer_event_types():
+            offset = 0
+            while True:
+                if offset:
+                    # Stay below the four requests per second the API allows.
+                    time.sleep(MAILER_REQUEST_INTERVAL)
+                items = self._fetch_mailer_event_page(
+                    event_type, date_from, date_to, offset,
+                )
+                imported, page_skipped = events._import_events(self, items)
+                events |= imported
+                skipped += page_skipped
+                if len(items) < MAILER_EVENT_PAGE_SIZE:
+                    break
+                offset += MAILER_EVENT_PAGE_SIZE
+
+        events._relink_unmatched(self)
+        if skipped:
+            _logger.warning(
+                "Liana Mailer returned %s event(s) that backend %s (id=%s) could "
+                "not read; the period is kept for the next fetch.",
+                skipped, self.name, self.id,
+            )
+        elif not explicit_period:
+            self.mailer_event_fetch_date = started_at - MAILER_EVENT_FETCH_OVERLAP
+        return events
+
+    def action_fetch_mailer_events(self):
+        """Import Liana Mailer events and report how many were new."""
+        self.ensure_one()
+        try:
+            events = self.fetch_mailer_events()
+        except LianaError as err:
+            raise UserError(str(err)) from err
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": _("Liana Mailer Events"),
+                "message": _("Imported %s new event(s) from Liana Mailer.") % len(events),
+                "type": "success",
+                "sticky": False,
+                "next": {"type": "ir.actions.client", "tag": "reload"},
+            },
+        }
 
     def action_fetch_liana_channels(self):
         """Refresh `liana.channel` from the Liana Automation `channel/list` endpoint."""
@@ -139,6 +590,7 @@ class LianaBackend(models.Model):
                 "message": _("Fetched %s channel(s) from Liana Automation.") % len(channels),
                 "type": "success",
                 "sticky": False,
+                "next": {"type": "ir.actions.client", "tag": "reload"},
             },
         }
 
@@ -148,29 +600,34 @@ class LianaBackend(models.Model):
         Shows a notification message to the user on success.
                 
         Raises:
-            UserError: If connection fails or settings are missing
-            LianaError: If API response is unexpected
+            UserError: If connection fails, settings are missing or the API
+                response is unexpected
             
         Returns:
             dict: Client action to display success notification
         """
         self._check_automation_settings()
-        
-        response = self.automation_send_api_request('v1/pingpong', {"ping": "pong"})
+
         expected_response = {"pong": "pong"}
-        if response == expected_response:
-            return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': 'Success',
-                    'message': 'Liana Automation connection successful!',
-                    'type': 'success',
-                    'sticky': False,
-                }
+        try:
+            response = self.automation_send_api_request('v1/pingpong', {"ping": "pong"})
+            if response != expected_response:
+                raise LianaError(
+                    f"Unexpected response from Liana Automation: {response}"
+                )
+        except LianaError as err:
+            raise UserError(str(err)) from err
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Success',
+                'message': 'Liana Automation connection successful!',
+                'type': 'success',
+                'sticky': False,
             }
-        else:
-            raise LianaError(f"Unexpected response from Liana Automation: {response}")
+        }
 
     def fetch_channels(self):
         """Call channel/list and upsert results into liana.channel.
@@ -245,13 +702,62 @@ class LianaBackend(models.Model):
             },
         }
 
+    def _build_recipient_values(self, partner):
+        """Build the LianaMailer recipient dict for a ``res.partner``.
+
+        ``email`` is always taken from the partner; the configured field
+        mappings add custom property values keyed by their Liana property name.
+        Reserved property names are skipped defensively.
+        """
+        self.ensure_one()
+        values = {"email": partner.email}
+        for mapping in self.mapping_ids:
+            property_name = mapping.liana_property_id.name
+            field_name = mapping.partner_field_id.name
+            if not property_name or not field_name:
+                continue
+            if property_name in MAILER_RESERVED_PROPERTY_NAMES:
+                continue
+            raw = partner[field_name]
+            if raw is False or raw is None:
+                raw = ""
+            elif not isinstance(raw, (str, int, float)):
+                raw = str(raw)
+            values[property_name] = raw
+        return values
+
     @api.model
-    def _get_default_backend(self):
-        """Return the unique backend in the database, or empty recordset.
+    def _get_default_backend(self, integration_type=None):
+        """Return the unique backend of ``integration_type``, or empty recordset.
 
         Used as the implicit fallback when a Liana action does not pin a
-        specific backend and exactly one is configured.
+        specific backend and exactly one is configured for the integration.
         """
-        backends = self.sudo().search([], limit=2)
+        domain = [("integration_type", "=", integration_type)] if integration_type else []
+        backends = self.sudo().search(domain, limit=2)
         return backends if len(backends) == 1 else self.browse()
+
+    def write(self, vals):
+        new_type = vals.get("integration_type")
+        if new_type:
+            for backend in self:
+                if backend.integration_type != new_type:
+                    backend._check_retype_allowed()
+        return super().write(vals)
+
+    def _check_retype_allowed(self):
+        """Refuse to change the integration type while it is still in use."""
+        self.ensure_one()
+        used_by = []
+        for model_name, field_name in INTEGRATION_TYPE_REFERENCES[self.integration_type]:
+            count = self.env[model_name].sudo().search_count([(field_name, "=", self.id)])
+            if count:
+                used_by.append("%s (%s)" % (self.env[model_name]._description, count))
+        if used_by:
+            raise UserError(_(
+                "Backend %(backend)s cannot change integration because it is "
+                "still used by: %(records)s.",
+                backend=self.display_name,
+                records=", ".join(used_by),
+            ))
 

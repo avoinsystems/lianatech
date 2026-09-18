@@ -1,6 +1,6 @@
 {
     "name": "Liana Connector",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.3.0",
     "category": "Marketing",
     "author": "Liana Technologies",
     "license": "Other proprietary",
@@ -8,11 +8,14 @@
     "depends": [
         "base_automation",
         "crm",
+        "mail",
         "sale",
     ],
     "data": [
+        "security/liana_groups.xml",
         "security/ir.model.access.csv",
         "data/ir_sequence_data.xml",
+        "data/ir_cron_data.xml",
         "views/ir_actions_server_views.xml",
         "views/liana_backend_views.xml",
         "views/liana_event_views.xml",
@@ -20,6 +23,9 @@
         "views/liana_dashboard_views.xml",
         "views/crm_lead_views.xml",
         "views/res_partner_views.xml",
+        "views/liana_mailer_event_views.xml",
+        "views/liana_mailing_list_views.xml",
+        "wizard/liana_mailing_list_add_views.xml",
         "views/menus.xml",
         "data/default_automations.xml",
     ],

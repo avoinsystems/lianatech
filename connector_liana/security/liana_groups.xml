@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_groups_privilege_liana" model="res.groups.privilege">
+        <field name="name">Liana</field>
+        <field name="category_id" ref="base.module_category_marketing"/>
+        <field name="sequence">100</field>
+    </record>
+
+    <record id="group_liana_mailing" model="res.groups">
+        <field name="name">Mailing Lists</field>
+        <field name="privilege_id" ref="res_groups_privilege_liana"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <field name="comment">Manage Liana mailing lists and export them to Liana Mailer.</field>
+    </record>
+
+    <record id="base.group_system" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('connector_liana.group_liana_mailing'))]"/>
+    </record>
+</odoo>

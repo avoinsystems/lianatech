@@ -1,0 +1,9 @@
+*.pyc
+.cursor/*
+.idea/*
+.project
+builds
+filestore
+.env
+
+

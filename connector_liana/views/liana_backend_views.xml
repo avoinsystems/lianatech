@@ -13,7 +13,13 @@
                         </h1>
                     </div>
                     <group>
-                        <group string="Liana Automation Configuration">
+                        <field name="integration_type"
+                               widget="radio"
+                               options="{'horizontal': true}"/>
+                    </group>
+                    <group string="Liana Automation Configuration"
+                           invisible="integration_type != 'automation'">
+                        <group >
                             <field name="liana_automation_address"/>
                             <field name="liana_automation_realm"/>
                             <field name="liana_automation_user"/>
@@ -52,6 +58,61 @@
                             </div>
                         </group>
                     </group>
+                    <group string="Liana Mailer Configuration"
+                           invisible="integration_type != 'mailer'">
+                        <field name="liana_mailer_address"/>
+                            <field name="liana_mailer_realm"/>
+                            <field name="liana_mailer_user"/>
+                            <field name="liana_mailer_secret" password="True"/>
+                            <field name="mailing_list_folder"
+                                   placeholder="e.g. Odoo/Newsletters"/>
+                            <field name="mailer_extra1_property_id"/>
+                            <field name="mailer_event_fetch_date"/>
+                            <field name="mailer_log_chatter"/>
+                            <field name="mailer_log_open" invisible="not mailer_log_chatter"/>
+                            <field name="mailer_log_click" invisible="not mailer_log_chatter"/>
+                            <field name="mailer_log_subscribe" invisible="not mailer_log_chatter"/>
+                            <button
+                                    name="test_mailer_connection"
+                                    type="object"
+                                    string="Test Mailer Connection"
+                                    class="oe_highlight"
+                            />
+                            <button
+                                    name="action_fetch_mailer_events"
+                                    type="object"
+                                    string="Fetch Mailer Events"
+                                    icon="fa-download"
+                                    class="btn-link"
+                            />
+                        <notebook colspan="2">
+                            <page string="Field Mappings" name="field_mappings">
+                                <div class="oe_button_box" name="mapping_buttons">
+                                    <button name="action_fetch_liana_properties"
+                                            type="object"
+                                            string="Get Properties"
+                                            icon="fa-refresh"
+                                            class="btn-link"/>
+                                </div>
+                                <field name="mapping_ids">
+                                    <list editable="bottom">
+                                        <field name="partner_field_id"
+                                               domain="[('model', '=', 'res.partner')]"/>
+                                        <field name="liana_property_id"
+                                               domain="[('backend_id', '=', parent.id)]"/>
+                                    </list>
+                                </field>
+                            </page>
+                            <page string="Liana Properties" name="liana_properties">
+                                <field name="property_ids" readonly="1">
+                                    <list>
+                                        <field name="name"/>
+                                        <field name="property_type"/>
+                                    </list>
+                                </field>
+                            </page>
+                        </notebook>
+                    </group>
                 </sheet>
             </form>
         </field>
@@ -64,7 +125,9 @@
         <field name="arch" type="xml">
             <list>
                 <field name="name"/>
-                <field name="liana_automation_address"/>
+                <field name="integration_type"/>
+                <field name="liana_automation_address" optional="hide"/>
+                <field name="liana_mailer_address" optional="hide"/>
             </list>
         </field>
     </record>
@@ -76,6 +139,18 @@
         <field name="arch" type="xml">
             <search>
                 <field name="name" string="Backend Name"/>
+                <field name="integration_type"/>
+                <filter name="filter_automation"
+                        string="Liana Automation"
+                        domain="[('integration_type', '=', 'automation')]"/>
+                <filter name="filter_mailer"
+                        string="Liana Mailer"
+                        domain="[('integration_type', '=', 'mailer')]"/>
+                <group colspan="16">
+                    <filter name="group_by_integration_type"
+                            string="Integration"
+                            context="{'group_by': 'integration_type'}"/>
+                </group>
             </search>
         </field>
     </record>
@@ -85,6 +160,20 @@
         <field name="name">Liana Backends</field>
         <field name="res_model">liana.backend</field>
         <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first Liana backend
+            </p>
+            <p>
+                A backend holds the API credentials of a single Liana
+                integration. Pick Liana Automation or Liana Mailer, fill in the
+                address, realm, user and secret from your Liana account, then
+                test the connection.
+            </p>
+            <p>
+                Using both integrations takes two backends, one of each kind.
+            </p>
+        </field>
     </record>
 </odoo>
 

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_liana_mailer_event_list" model="ir.ui.view">
+        <field name="name">liana.mailer.event.list</field>
+        <field name="model">liana.mailer.event</field>
+        <field name="arch" type="xml">
+            <list create="false" edit="false">
+                <header>
+                    <button name="action_relink_partners"
+                            type="object"
+                            string="Link Contacts"/>
+                </header>
+                <field name="event_date"/>
+                <field name="event_type" widget="badge"
+                       decoration-success="event_type == 'list-join'"
+                       decoration-info="event_type == 'mailopen'"
+                       decoration-warning="event_type == 'maillink'"/>
+                <field name="partner_id"/>
+                <field name="recipient_email"/>
+                <field name="liana_list_name" optional="show"/>
+                <field name="url" optional="show" widget="url"/>
+                <field name="partner_match" optional="hide"/>
+                <field name="recipient_extra1" optional="hide"/>
+                <field name="delivery_id" optional="hide"/>
+                <field name="backend_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_liana_mailer_event_form" model="ir.ui.view">
+        <field name="name">liana.mailer.event.form</field>
+        <field name="model">liana.mailer.event</field>
+        <field name="arch" type="xml">
+            <form create="false" edit="false">
+                <sheet>
+                    <group>
+                        <group string="Event">
+                            <field name="event_type"/>
+                            <field name="event_date"/>
+                            <field name="url" widget="url" invisible="not url"/>
+                            <field name="reason" invisible="not reason"/>
+                            <field name="backend_id"/>
+                        </group>
+                        <group string="Recipient">
+                            <field name="partner_id"/>
+                            <field name="partner_match"/>
+                            <field name="recipient_email"/>
+                            <field name="recipient_extra1"/>
+                            <field name="recipient_liana_id"/>
+                        </group>
+                        <group string="Mailing">
+                            <field name="liana_list_name"/>
+                            <field name="liana_list_id"/>
+                            <field name="mailing_list_id"/>
+                            <field name="delivery_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Payload" name="payload">
+                            <field name="payload" nolabel="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_liana_mailer_event_search" model="ir.ui.view">
+        <field name="name">liana.mailer.event.search</field>
+        <field name="model">liana.mailer.event</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="partner_id"/>
+                <field name="recipient_email"/>
+                <field name="recipient_extra1"/>
+                <field name="liana_list_name"/>
+                <filter name="filter_opens" string="Opens"
+                        domain="[('event_type', '=', 'mailopen')]"/>
+                <filter name="filter_clicks" string="Clicks"
+                        domain="[('event_type', '=', 'maillink')]"/>
+                <filter name="filter_subscribes" string="Subscribes"
+                        domain="[('event_type', '=', 'list-join')]"/>
+                <separator/>
+                <filter name="filter_unmatched" string="Without Contact"
+                        domain="[('partner_id', '=', False)]"/>
+                <separator/>
+                <filter name="filter_event_date" string="Event Date"
+                        date="event_date"/>
+                <group>
+                    <filter name="group_by_event_type" string="Type"
+                            context="{'group_by': 'event_type'}"/>
+                    <filter name="group_by_partner" string="Contact"
+                            context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_by_list" string="Liana List"
+                            context="{'group_by': 'liana_list_name'}"/>
+                    <filter name="group_by_event_date" string="Event Date"
+                            context="{'group_by': 'event_date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_liana_mailer_event" model="ir.actions.act_window">
+        <field name="name">Mailer Events</field>
+        <field name="res_model">liana.mailer.event</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_liana_mailer_event_search"/>
+    </record>
+</odoo>
