@@ -3,10 +3,12 @@ import csv
 import io
 import logging
 from ast import literal_eval
+from collections import defaultdict
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.fields import Domain
+from odoo.tools import SQL
 
 from .liana_backend import (
     INTEGRATION_TYPE_MAILER,
@@ -146,6 +148,43 @@ class LianaMailingList(models.Model):
         if self.recipient_mode == "domain":
             return self.env["res.partner"].search(self._get_partner_domain())
         return self.partner_ids
+
+    def _match_partners(self, partners):
+        """Return ``{partner_id: {list_id, ...}}`` for the lists in ``self``.
+
+        Every list domain becomes its own SELECT restricted to ``partners``,
+        and all of them are sent as a single UNION ALL statement: answering
+        "which lists target this contact" then costs one round-trip whatever
+        the number of lists, and each branch is anchored on the contact ids
+        so nothing scales with the size of ``res.partner``.
+
+        Lists using the manual mode are ignored; their recipients are a
+        stored relation that the ORM already reads in one go.
+        """
+        matches = defaultdict(set)
+        if not partners:
+            return matches
+
+        selects = []
+        for mailing_list in self.filtered(lambda ml: ml.recipient_mode == "domain"):
+            domain = Domain("id", "in", partners.ids) & mailing_list._get_partner_domain()
+            if domain.is_false():
+                continue
+            # Keep the default active_test so the result agrees with what
+            # _get_recipients() would export, and let _search apply the
+            # contact record rules of the current user.
+            query = self.env["res.partner"]._search(domain)
+            selects.append(query.select(
+                SQL("%s AS list_id", mailing_list.id),
+                SQL.identifier(query.table, "id"),
+            ))
+        if not selects:
+            return matches
+
+        self.env.cr.execute(SQL(" UNION ALL ").join(selects))
+        for list_id, partner_id in self.env.cr.fetchall():
+            matches[partner_id].add(list_id)
+        return matches
 
     def _cron_export_all_to_liana(self):
         """Export every Liana mailing list to Liana Mailer (scheduled action)."""
