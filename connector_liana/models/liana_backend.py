@@ -29,6 +29,9 @@ MAILER_API_PROPERTIES_PATH = "v1/getCustomerProperties"
 # This is the only endpoint accepting a folder, both when creating a list and
 # when moving an existing one.
 MAILER_API_IMPORT_LIST_PATH = "v2/import/mailinglist"
+# POST body: positional array [list_id, new_name, new_description]. The import
+# endpoint cannot carry a description, so it is set in a follow-up call.
+MAILER_API_EDIT_LIST_PATH = "v1/editMailingList"
 # GET with URL parameters only. Returns recipient tracking events.
 MAILER_API_EVENTS_PATH = "v3/events"
 

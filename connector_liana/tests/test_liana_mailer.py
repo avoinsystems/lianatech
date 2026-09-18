@@ -10,6 +10,7 @@ from odoo.tests.common import TransactionCase
 from odoo.addons.connector_liana.models import liana_backend as liana_backend_module
 
 IMPORT_PATH = liana_backend_module.MAILER_API_IMPORT_LIST_PATH
+EDIT_PATH = liana_backend_module.MAILER_API_EDIT_LIST_PATH
 
 
 class LianaMailerCommon(TransactionCase):
@@ -71,9 +72,21 @@ class LianaMailerCommon(TransactionCase):
             autospec=False,
         )
 
+    def _params_for(self, mock_req, path):
+        """Return the payload of the last call made to ``path``."""
+        calls = [
+            call for call in mock_req.call_args_list if call.args[0] == path
+        ]
+        self.assertTrue(calls, "No call to %s" % path)
+        return calls[-1].args[1]
+
     def _import_params(self, mock_req):
         """Return the payload of the last import call."""
-        return mock_req.call_args_list[-1].args[1]
+        return self._params_for(mock_req, IMPORT_PATH)
+
+    def _edit_params(self, mock_req):
+        """Return the payload of the last list edit call."""
+        return self._params_for(mock_req, EDIT_PATH)
 
     def _imported_csv(self, mock_req):
         """Return the decoded CSV text sent by the last import call."""
@@ -101,7 +114,7 @@ class TestLianaMailerExport(LianaMailerCommon):
         self.assertTrue(self.mailing_list.date_liana_export)
 
         paths = [call.args[0] for call in mock_req.call_args_list]
-        self.assertEqual(paths, [IMPORT_PATH])
+        self.assertEqual(paths, [IMPORT_PATH, EDIT_PATH])
 
         params = self._import_params(mock_req)
         self.assertEqual(params["name"], "Newsletter")
@@ -126,7 +139,7 @@ class TestLianaMailerExport(LianaMailerCommon):
             self.mailing_list.action_export_to_liana()
 
         paths = [call.args[0] for call in mock_req.call_args_list]
-        self.assertEqual(paths, [IMPORT_PATH])
+        self.assertEqual(paths, [IMPORT_PATH, EDIT_PATH])
         self.assertEqual(self._import_params(mock_req)["list_id"], 500)
 
     def test_export_truncates_when_enabled(self):
@@ -263,6 +276,42 @@ class TestLianaMailerExport(LianaMailerCommon):
             "partner_field_id": function_field.id,
             "liana_property_id": prop.id,
         })
+
+
+@tagged("post_install", "-at_install")
+class TestLianaMailingListDescription(LianaMailerCommon):
+
+    def test_default_description(self):
+        self.assertEqual(self.mailing_list.description, "source: Odoo")
+
+    def test_description_sent_after_import(self):
+        with self._patch_mailer(create_result=77) as mock_req:
+            self.mailing_list.action_export_to_liana()
+
+        # The edit call identifies its parameters positionally.
+        self.assertEqual(
+            self._edit_params(mock_req), [77, "Newsletter", "source: Odoo"]
+        )
+
+    def test_empty_description_sent_as_empty_string(self):
+        self.mailing_list.description = False
+        with self._patch_mailer(create_result=78) as mock_req:
+            self.mailing_list.action_export_to_liana()
+
+        self.assertEqual(self._edit_params(mock_req)[2], "")
+
+    def test_description_failure_leaves_export_successful(self):
+        responses = {EDIT_PATH: {"succeed": False, "message": "list locked"}}
+        with self._patch_mailer(create_result=79, responses=responses):
+            with self.assertLogs(
+                "odoo.addons.connector_liana.models.liana_mailing_list",
+                level="WARNING",
+            ) as logs:
+                self.mailing_list.action_export_to_liana()
+
+        self.assertTrue(any("list locked" in message for message in logs.output))
+        self.assertEqual(self.mailing_list.liana_list_id, 79)
+        self.assertTrue(self.mailing_list.date_liana_export)
 
 
 @tagged("post_install", "-at_install")

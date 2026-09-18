@@ -10,6 +10,7 @@ from odoo.fields import Domain
 
 from .liana_backend import (
     INTEGRATION_TYPE_MAILER,
+    MAILER_API_EDIT_LIST_PATH,
     MAILER_API_IMPORT_LIST_PATH,
     LianaError,
 )
@@ -23,6 +24,11 @@ class LianaMailingList(models.Model):
     _order = "name"
 
     name = fields.Char(required=True)
+    description = fields.Char(
+        default="source: Odoo",
+        help="Short description shown on the list in Liana Mailer. "
+             "Sent on every export.",
+    )
     recipient_mode = fields.Selection(
         selection=[
             ("manual", "Selected Contacts"),
@@ -243,6 +249,8 @@ class LianaMailingList(models.Model):
         except LianaError as err:
             raise UserError(str(err)) from err
 
+        self._liana_send_description(backend)
+
         return {
             "type": "ir.actions.client",
             "tag": "display_notification",
@@ -254,6 +262,25 @@ class LianaMailingList(models.Model):
                 "next": {"type": "ir.actions.client", "tag": "reload"},
             },
         }
+
+    def _liana_send_description(self, backend):
+        """Push the list description; the import endpoint cannot carry it.
+
+        The contacts are already imported at this point, so a failure here is
+        logged rather than raised.
+        """
+        self.ensure_one()
+        try:
+            self._liana_call(
+                backend,
+                MAILER_API_EDIT_LIST_PATH,
+                [self.liana_list_id, self.name, self.description or ""],
+            )
+        except LianaError as err:
+            _logger.warning(
+                "Could not update the Liana description of mailing list %s (id=%s): %s",
+                self.name, self.id, err,
+            )
 
     def _liana_call(self, backend, path, params):
         """Call a Mailer endpoint and validate the ``succeed``/``result`` envelope."""

@@ -34,6 +34,7 @@
                     <group string="Liana Mailer">
                         <field name="liana_backend_id"/>
                         <field name="liana_list_id" readonly="1"/>
+                        <field name="description"/>
                         <field name="liana_folder"
                                placeholder="Backend default"/>
                         <field name="liana_truncate" widget="boolean_toggle"/>

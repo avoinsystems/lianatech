@@ -546,9 +546,11 @@ class TestLianaMailerExtra1Export(LianaMailerEventCommon):
             self.mailing_list.action_export_to_liana()
 
         self.assertTrue(self.partner.liana_extra1)
-        csv_data = base64.b64decode(
-            mock_send.call_args.args[1]["data"]
-        ).decode("utf-8")
+        import_call = next(
+            call for call in mock_send.call_args_list
+            if call.args[0] == liana_backend_module.MAILER_API_IMPORT_LIST_PATH
+        )
+        csv_data = base64.b64decode(import_call.args[1]["data"]).decode("utf-8")
         self.assertEqual(csv_data.splitlines()[0], '"email";"%s"' % EXTRA1_PROPERTY_NAME)
         self.assertIn(self.partner.liana_extra1, csv_data)
 
