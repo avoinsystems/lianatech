@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="liana_mailing_list_add_view_form" model="ir.ui.view">
+        <field name="name">liana.mailing.list.add.form</field>
+        <field name="model">liana.mailing.list.add</field>
+        <field name="arch" type="xml">
+            <form string="Add to Liana Mailing List">
+                <field name="view_domain" invisible="1"/>
+                <group>
+                    <group>
+                        <field name="target" widget="radio"/>
+                        <field name="mailing_list_id"
+                               invisible="target != 'existing'"
+                               required="target == 'existing'"
+                               options="{'no_create_edit': True, 'no_open': True}"/>
+                        <field name="name"
+                               invisible="target != 'new'"
+                               required="target == 'new'"
+                               placeholder="e.g. Autumn Newsletter"/>
+                        <field name="liana_backend_id"
+                               invisible="target != 'new'"/>
+                    </group>
+                    <group>
+                        <field name="recipient_mode"
+                               widget="radio"
+                               readonly="target == 'existing'"/>
+                        <field name="partner_count"/>
+                    </group>
+                </group>
+                <div class="alert alert-info" role="alert"
+                     invisible="target != 'existing'">
+                    The recipient selection of an existing list cannot be changed
+                    here, because switching it would drop the recipients the list
+                    already has. Create a new list to use the other mode.
+                </div>
+                <div class="alert alert-info" role="alert"
+                     invisible="recipient_mode != 'manual' or target != 'new'">
+                    The contacts you ticked in the contacts list become the
+                    recipients of the new list. The list does not follow your
+                    filter afterwards: contacts matching it later have to be added
+                    separately. Use Search Domain instead if you want the
+                    recipients kept up to date, or if your selection is large
+                    enough to be truncated by the server limit.
+                </div>
+                <div class="alert alert-info" role="alert"
+                     invisible="recipient_mode != 'manual' or target != 'existing'">
+                    The contacts you ticked in the contacts list are added to the
+                    list. Contacts already on it are kept.
+                </div>
+                <div class="alert alert-info" role="alert"
+                     invisible="recipient_mode != 'domain'">
+                    Recipients are re-evaluated on every export, so contacts
+                    matching the domain later on are included automatically. The
+                    proposed domain is the one active in the contacts list; which
+                    rows you ticked makes no difference.
+                </div>
+                <div class="alert alert-info" role="alert"
+                     invisible="recipient_mode != 'domain' or target != 'existing'">
+                    It has been combined with the current domain of the list so
+                    that contacts matching either one stay recipients. Edit it
+                    below if you want something narrower.
+                </div>
+                <field name="partner_ids"
+                       invisible="recipient_mode != 'manual'">
+                    <list>
+                        <field name="display_name"/>
+                        <field name="email"/>
+                    </list>
+                </field>
+                <group invisible="recipient_mode != 'domain'">
+                    <field name="existing_partner_domain"
+                           widget="domain"
+                           options="{'model': 'res.partner'}"
+                           readonly="1"
+                           invisible="target != 'existing'"/>
+                    <field name="partner_domain"
+                           widget="domain"
+                           options="{'model': 'res.partner'}"/>
+                </group>
+                <footer>
+                    <button name="action_apply"
+                            string="Add to List"
+                            type="object"
+                            class="btn-primary"
+                            data-hotkey="q"/>
+                    <button name="action_apply_and_export"
+                            string="Add and Export"
+                            type="object"
+                            class="btn-secondary"
+                            data-hotkey="w"/>
+                    <button string="Cancel"
+                            class="btn-secondary"
+                            special="cancel"
+                            data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_liana_mailing_list_add" model="ir.actions.act_window">
+        <field name="name">Add to Liana Mailing List</field>
+        <field name="res_model">liana.mailing.list.add</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="base.model_res_partner"/>
+        <field name="binding_view_types">list</field>
+        <field name="group_ids"
+               eval="[(4, ref('connector_liana.group_liana_mailing'))]"/>
+    </record>
+</odoo>

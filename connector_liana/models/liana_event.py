@@ -4,7 +4,11 @@ import logging
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
-from .liana_backend import AUTOMATION_API_EVENT_PATH, LianaError
+from .liana_backend import (
+    AUTOMATION_API_EVENT_PATH,
+    INTEGRATION_TYPE_AUTOMATION,
+    LianaError,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -38,7 +42,10 @@ class LianaEvent(models.Model):
         comodel_name="liana.backend",
         ondelete="restrict",
         readonly=True,
-        default=lambda self: self.env["liana.backend"]._get_default_backend(),
+        domain=[("integration_type", "=", INTEGRATION_TYPE_AUTOMATION)],
+        default=lambda self: self.env["liana.backend"]._get_default_backend(
+            INTEGRATION_TYPE_AUTOMATION
+        ),
         help="Backend that handled (or should handle, on retry) this event.",
     )
 
@@ -84,6 +91,19 @@ class LianaEvent(models.Model):
     )
 
     response = fields.Json()
+
+    @api.constrains("backend_id")
+    def _check_backend_integration_type(self):
+        for event in self:
+            if (
+                event.backend_id
+                and event.backend_id.integration_type != INTEGRATION_TYPE_AUTOMATION
+            ):
+                raise ValidationError(_(
+                    "Backend %(backend)s is not a Liana Automation backend and "
+                    "cannot send automation events.",
+                    backend=event.backend_id.display_name,
+                ))
 
     @api.depends("payload")
     def _compute_payload_text(self):

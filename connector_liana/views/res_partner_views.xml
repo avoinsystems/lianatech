@@ -9,6 +9,28 @@
                    position="after">
                 <field name="liana_extra1" invisible="not liana_extra1"/>
             </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_liana_mailer_events"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-envelope-open-o"
+                        groups="connector_liana.group_liana_mailing"
+                        invisible="liana_mailer_event_count == 0">
+                    <field name="liana_mailer_event_count"
+                           widget="statinfo"
+                           string="Liana Mailer Events"/>
+                </button>
+                <button name="action_view_liana_mailing_lists"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-paper-plane-o"
+                        groups="connector_liana.group_liana_mailing"
+                        invisible="liana_mailing_list_count == 0">
+                    <field name="liana_mailing_list_count"
+                           widget="statinfo"
+                           string="Liana Mailing Lists"/>
+                </button>
+            </xpath>
         </field>
     </record>
 </odoo>

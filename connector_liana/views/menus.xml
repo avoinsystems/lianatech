@@ -18,20 +18,43 @@
         sequence="1"
     />
 
-    <!-- Configuration Menu (admin-only) -->
     <menuitem
-        id="liana_menu_configuration"
-        name="Configuration"
+        id="liana_menu_automation"
+        name="Automation"
+        parent="liana_menu_root"
+        sequence="10"
+    />
+
+    <menuitem
+        id="liana_menu_mailer"
+        name="Mailer"
         parent="liana_menu_root"
         sequence="20"
-        groups="base.group_system"
+    />
+
+    <menuitem
+        id="liana_menu_mailing_lists"
+        name="Mailing Lists"
+        parent="liana_menu_mailer"
+        action="action_liana_mailing_list"
+        sequence="10"
+        groups="connector_liana.group_liana_mailing"
+    />
+
+    <menuitem
+        id="liana_menu_mailer_events"
+        name="Mailer Events"
+        parent="liana_menu_mailer"
+        action="action_liana_mailer_event"
+        sequence="15"
+        groups="connector_liana.group_liana_mailing"
     />
 
     <!-- Menu item for Liana Event (admin-only) -->
     <menuitem
         id="liana_menu_events"
-        name="Events"
-        parent="liana_menu_configuration"
+        name="Automation Events"
+        parent="liana_menu_automation"
         action="action_liana_event"
         sequence="10"
         groups="base.group_system"
@@ -41,7 +64,7 @@
     <menuitem
         id="liana_menu_automations"
         name="Automations"
-        parent="liana_menu_configuration"
+        parent="liana_menu_automation"
         action="action_liana_automation"
         sequence="20"
     />
@@ -49,9 +72,10 @@
     <!-- Liana Backends Menu Item -->
     <menuitem
         id="liana_menu_backends"
-        name="Backends"
-        parent="liana_menu_configuration"
+        name="Integrations"
+        parent="liana_menu_root"
         action="liana_backend_action"
         sequence="30"
+        groups="base.group_system"
     />
 </odoo>
